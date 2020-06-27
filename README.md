@@ -1,3 +1,42 @@
+## RocketTrack
+
+This is a fork of Dave Akerman's FlexTrack customised for use on a high power rocket using a TTGO T-Beam v1.0 or equivalent board fitted with an SD Card socket.
+
+Features 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#### Legacy below here
+
+
+
 ## FlexTrack 
 
 Flexible Arduino-based tracker software for RTTY, LoRa and APRS.

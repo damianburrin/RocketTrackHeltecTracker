@@ -1,5 +1,10 @@
 can be found here 
 
-	https://github.com/LilyGO/TTGO-T-Beam
+for the v0.7 board
 
+	https://github.com/LilyGO/TTGO-T-Beam
+	
+for the v1.0 board
+	
+	https://github.com/Xinyuan-LilyGO/LilyGO-T-Beam
 	
