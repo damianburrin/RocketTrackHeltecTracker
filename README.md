@@ -2,9 +2,24 @@
 
 This is a fork of Dave Akerman's FlexTrack customised for use on a high power rocket using a TTGO T-Beam v1.0 or equivalent board fitted with an SD Card socket.
 
-Features 
+## Features 
 
+- Operates in two modes; High Speed and Long Range.  
 
+		Long Range mode is for when the flight has completed and the rocket is on the ground and will give the best range at a limited update rate.  
+		High Speed mode is for before and during the flight when it records high rate GPS data to the SD card before it detects landing and switches to Long Range mode.
+
+- Uses binary mode uBlox protocol from the GPS receiver to simplify onboard processing
+
+- Is configured from a simple web interface served over WiFi
+
+- Stores configuration in a file stored on the SD Card
+
+- Optionally uses strong encryption
+
+- Stores high rate gyro, accelerometer and magnetometer data to the SD card logs
+
+- Can use a barometric altimeter, BMP180 or BME280 initially, and store and transmit this data
 
 
 
