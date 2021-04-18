@@ -41,13 +41,13 @@ s|                                                                              
 #define LORA_FREQUENCY       434.450
 #define LORA_OFFSET           0         // Frequency to add in kHz to make Tx frequency accurate
 
-#define LORA_ID              0
-#define LORA_CYCLETIME       0                // Set to zero to send continuously
-#define LORA_MODE            1
-#define LORA_BINARY          0
+#define LORA_ID             0
+#define LORA_CYCLETIME      0                // Set to zero to send continuously
+#define LORA_MODE           1
+#define LORA_BINARY         0
 #define LORA_CALL_FREQ 		433.650
-#define LORA_CALL_MODE		 5				
-#define LORA_CALL_COUNT		 0				// Set to zero to disable calling mode
+#define LORA_CALL_MODE		5				
+#define LORA_CALL_COUNT		0				// Set to zero to disable calling mode
 
 // Landing prediction
 #define INITIAL_CDA         0.7
@@ -64,24 +64,16 @@ s|                                                                              
 
 // HARDWARE DEFINITION
 
-#define LORA_NSS           18                // Comment out to disable LoRa code
-#define LORA_RESET         14                // Comment out if not connected
-#define LORA_DIO0          26                
-#define SCK     5    // GPIO5  -- SX1278's SCK
-#define MISO    19   // GPIO19 -- SX1278's MISO
-#define MOSI    27   // GPIO27 -- SX1278's MOSI
+#define LORA_NSS			18		// Comment out to disable LoRa code
+#define LORA_RESET			14		// Comment out if not connected
+#define LORA_DIO0			26                
+#define SCK					5		// GPIO5  -- SX1278's SCK
+#define MISO				19		// GPIO19 -- SX1278's MISO
+#define MOSI				27		// GPIO27 -- SX1278's MOSI
 
 //------------------------------------------------------------------------------------------------------
 
-
-#define EXTRA_FIELD_FORMAT    ",%d,%.2f,%7.5f,%7.5f,%3.1f,%d"          // List of formats for extra fields. Make empty if no such fields.  Always use comma at start of there are any such fields.
-#define EXTRA_FIELD_LIST           ,GPS.Satellites, GPS.CDA, GPS.PredictedLatitude, GPS.PredictedLongitude, GPS.PredictedLandingSpeed, GPS.TimeTillLanding
-                                                                
-                                                                // List of variables/expressions for extra fields. Make empty if no such fields.  Always use comma at start of there are any such fields.
-#define SENTENCE_LENGTH      100                  // This is more than sufficient for the standard sentence.  Extend if needed; shorten if you are tight on memory.
-
 AXP20X_Class axp;
-
 
 //------------------------------------------------------------------------------------------------------
 //
@@ -129,6 +121,7 @@ struct TGPS
 
 
 int SentenceCounter=0;
+#define SEQUENCE_LENGTH 120
 
 //------------------------------------------------------------------------------------------------------
 
@@ -138,16 +131,14 @@ void setup()
 	
 	Serial.begin(115200);
 	Serial.println("");
-	Serial.print("FlexTrack Flight Computer, payload ID(s)");
-	Serial.print(' ');
-	Serial.print(LORA_PAYLOAD_ID);
-		
+	Serial.print("RocketTrack Flight Telemetry System");		
 	Serial.println("");
 	
-	Wire.begin(21, 22);
+	Wire.begin(21,22);
 	
-	if (!axp.begin(Wire, AXP192_SLAVE_ADDRESS)) { Serial.println("AXP192 Begin PASS");  } 
-	else                                        { Serial.println("AXP192 Begin FAIL");  }
+	Serial.print("AXP192 Init");
+	if(!axp.begin(Wire, AXP192_SLAVE_ADDRESS))	{	Serial.println(" PASS");	} 
+	else                                        {	Serial.println(" FAIL");	}
 	
 	axp.setPowerOutPut(AXP192_LDO2, AXP202_ON);
 	axp.setPowerOutPut(AXP192_LDO3, AXP202_ON);
@@ -156,52 +147,31 @@ void setup()
 	axp.setPowerOutPut(AXP192_DCDC1, AXP202_ON);
 	axp.setDCDC1Voltage(3300);
 	
-	Serial.printf("DCDC1: %s\n", axp.isDCDC1Enable() ? "ENABLE" : "DISABLE");
-	Serial.printf("DCDC2: %s\n", axp.isDCDC2Enable() ? "ENABLE" : "DISABLE");
-	Serial.printf("LDO2: %s\n", axp.isLDO2Enable() ? "ENABLE" : "DISABLE");
-	Serial.printf("LDO3: %s\n", axp.isLDO3Enable() ? "ENABLE" : "DISABLE");
-	Serial.printf("DCDC3: %s\n", axp.isDCDC3Enable() ? "ENABLE" : "DISABLE");
-	Serial.printf("Exten: %s\n", axp.isExtenEnable() ? "ENABLE" : "DISABLE");
+	Serial.printf("\tDCDC1: %s\n",axp.isDCDC1Enable()?"ENABLE":"DISABLE");
+	Serial.printf("\tDCDC2: %s\n",axp.isDCDC2Enable()?"ENABLE":"DISABLE");
+	Serial.printf("\tLDO2: %s\n",axp.isLDO2Enable()?"ENABLE":"DISABLE");
+	Serial.printf("\tLDO3: %s\n",axp.isLDO3Enable()?"ENABLE":"DISABLE");
+	Serial.printf("\tDCDC3: %s\n",axp.isDCDC3Enable()?"ENABLE":"DISABLE");
+	Serial.printf("\tExten: %s\n",axp.isExtenEnable()?"ENABLE":"DISABLE");
 
-	if (axp.isChargeing()) 
-	{
-		Serial.println("Charging");
-	}  
+	if(axp.isChargeing()) 
+		Serial.println("Charging ...");
 	
+	SetupCrypto();
+	
+	SetupPressureSensor();
 	SetupGPS();
-	
-	// SetupADC();
-	
 	SetupLoRa();
-
-	#ifdef WIREBUS
-// 		Setupds18b20();
-	#endif
-
-	SetupPrediction();
+	
 }
 
 void loop()
-{  
+{
+	CheckPressureSensor();
 	CheckGPS();
-	
-#ifdef CUTDOWN
-	CheckCutdown();
-#endif
-	
 	CheckLoRa();
-	
-//  CheckADC();
-	
 	CheckLEDs();
-	
-#ifdef WIREBUS
-	Checkds18b20();
-#endif
-	
 	CheckHost();
-	
-	CheckPrediction();
 }
 
 void CheckHost(void)
@@ -212,63 +182,62 @@ void CheckHost(void)
 
 	while (Serial.available())
 	{ 
-		Character = Serial.read();
-
-		if (Character == '~')
+		Character=Serial.read();
+		
+		if(Character=='~')
 		{
-			Line[0] = Character;
-			Length = 1;
+			Line[0]=Character;
+			Length=1;
 		}
-		else if (Character == '\r')
+		else if(Character=='\r')
 		{
-			Line[Length] = '\0';
+			Line[Length]='\0';
 			ProcessCommand(Line+1);
-			Length = 0;
+			Length=0;
 		}
-		else if (Length >= sizeof(Line))
+		else if(Length>=sizeof(Line))
 		{
-			Length = 0;
+			Length=0;
 		}
-		else if (Length > 0)
+		else if(Length>0)
 		{
-			Line[Length++] = Character;
+			Line[Length++]=Character;
 		}
 	}
 }
 
 void ProcessCommand(char *Line)
 {
-	int OK = 0;
+	int OK=0;
+	
+	switch(Line[0])
+	{
+		case 'G':
+//					OK=ProcessGPSCommand(Line+1);
+					break;
+					
+		case 'C':
+//					OK=ProcessCommonCommand(Line+1);
+					break;
+					
+		case 'L':
+//					OK = ProcessLORACommand(Line+1);
+					break;
+					
+		case 'A':
+//					OK = ProcessAPRSCommand(Line+1);
+					break;
+					
+		case 'F':
+					OK=ProcessFieldCommand(Line+1);
+					break;
+					
+		default:	// do nothing
+					break;
+	}
 
-	if (Line[0] == 'G')
-	{
-		// OK = ProcessGPSCommand(Line+1);
-	}
-	else if (Line[0] == 'C')
-	{
-		// OK = ProcessCommonCommand(Line+1);
-	}
-	else if (Line[0] == 'L')
-	{
-		// OK = ProcessLORACommand(Line+1);
-	}
-	else if (Line[0] == 'A')
-	{
-		// OK = ProcessAPRSCommand(Line+1);
-	}
-	else if (Line[0] == 'F')
-	{
-		OK = ProcessFieldCommand(Line+1);
-	}
-
-	if (OK)
-	{
-		Serial.println("*");
-	}
-	else
-	{
-		Serial.println("?");
-	}
+	if(OK)	{	Serial.println("*");	}
+	else	{	Serial.println("?");	}
 }
 
 int ProcessFieldCommand(char *Line)
@@ -286,3 +255,4 @@ int ProcessFieldCommand(char *Line)
 	
 	return OK;
 }
+
