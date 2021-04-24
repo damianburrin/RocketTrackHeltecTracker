@@ -165,7 +165,7 @@ void setup()
 
 void loop()
 {
-#if 1
+#if 0
 	uint8_t ch;
 
 #if 1
@@ -186,7 +186,7 @@ void loop()
 //	CheckPressureSensor();
 	CheckGPS();
 //	CheckLoRa();
-	CheckLEDs();
+//	CheckLEDs();
 //	CheckHost();
 #endif
 }

@@ -1,4 +1,6 @@
 
+#define MAX_CHANNELS 50
+
 // Globals
 byte RequiredFlightMode=0;
 byte GlonassMode=0;
@@ -7,36 +9,104 @@ byte LastCommand1=0;
 byte LastCommand2=0;
 byte HaveHadALock=0;
 
-char Hex(int Character)
+
+// these are all unpacked from UBX messages
+
+// from NAV-STATUS
+uint32_t iTOW=0;
+uint8_t gpsFix=0;
+uint8_t flags=0;
+uint8_t fixStat=0;
+uint8_t flags2=0;
+uint32_t ttff=0;
+uint32_t msss=0;
+
+// from NAV-SVINFO
+uint8_t numCh=0;
+uint8_t globalFlags=0;
+uint16_t reserved2=0;
+
+uint8_t chn[MAX_CHANNELS];
+uint8_t svid[MAX_CHANNELS];
+uint8_t svflags[MAX_CHANNELS];
+uint8_t quality[MAX_CHANNELS];
+uint8_t cno[MAX_CHANNELS];
+int8_t elev[MAX_CHANNELS];
+int16_t azim[MAX_CHANNELS];
+int32_t prRes[MAX_CHANNELS];
+
+// from NAV-POSLLH
+int32_t lon=0;
+int32_t lat=0;
+int32_t height=0;
+int32_t hMSL=0;
+uint32_t hAcc=0;
+uint32_t vAcc=0;
+	
+
+
+
+
+
+
+
+
+
+char Hex(int rxbyte)
 {
 	char HexTable[] = "0123456789ABCDEF";
-	return HexTable[Character];
+	return HexTable[rxbyte];
 }
 
-void FixUBXChecksum(unsigned char *Message,int Length)
+void CalculateChecksum(uint8_t *buffer,uint16_t bufferptr,uint8_t *CK_A,uint8_t *CK_B)
+{
+	uint16_t cnt;
+	
+	*CK_A=0;
+	*CK_B=0;
+	
+	for(cnt=2;cnt<(bufferptr-2);cnt++)
+	{
+		*CK_A+=buffer[cnt];
+		*CK_B+=*CK_A;
+	}
+}
+
+void FixUBXChecksum(unsigned char *Message,int bufferptr)
 { 
 	int cnt;
 	unsigned char CK_A=0;
 	unsigned char CK_B=0;
 	
-	for(cnt=2;cnt<(Length-2);cnt++)
+	for(cnt=2;cnt<(bufferptr-2);cnt++)
 	{
 		CK_A+=Message[cnt];
 		CK_B+=CK_A;
 	}
 	
-	Message[Length-2]=CK_A;
-	Message[Length-1]=CK_B;
+	Message[bufferptr-2]=CK_A;
+	Message[bufferptr-1]=CK_B;
 }
 
-void SendUBX(unsigned char *Message,int Length)
+bool CheckChecksum(uint8_t *buffer,uint16_t bufferptr)
+{
+	uint8_t CK_A;
+	uint8_t CK_B;
+	
+	CalculateChecksum(buffer,bufferptr,&CK_A,&CK_B);
+	
+	if((CK_A==buffer[bufferptr-2])&&(CK_B==buffer[bufferptr-1]))	return(1);
+	else															return(0);
+}
+
+void SendUBX(unsigned char *Message,int bufferptr)
 {
 	int cnt;
 	
 	LastCommand1=Message[2];
 	LastCommand2=Message[3];
 	
-	for(cnt=0;cnt<Length;cnt++)
+	for(cnt=0;cnt<bufferptr;cnt++)
 		Serial1.write(Message[cnt]);
 }
 
@@ -204,9 +274,12 @@ void SetupGPS(void)
 	SetMessageRate(0x01,0x03,0x05);	// NAV-STATUS every 5th fix
 	SetMessageRate(0x01,0x30,0x05);	// NAV-SVINFO every 5th fix
 	
-#if 1
 	EnableRawMeasurements();
+	
+#if 0
 	SetMessageRate(0x02,0x10,0x05);	// RXM-RAW every 5th fix
+#else
+	SetMessageRate(0x02,0x10,0x00);	// RXM-RAW off
 #endif
 #endif
 	
@@ -240,194 +313,169 @@ float FixPosition(float Position)
 	return(Minutes+Seconds*5/3);
 }
 
-void ProcessNMEA(char *Buffer,int Count)
-{
-	int Satellites;
-	int date;
-	char ns;
-	char ew;
-	char TimeString[16];
-	char LatString[16];
-	char LongString[16];
-	char Temp[4];
-	
-	Serial.print(Buffer);
-	
-	if(GPSChecksumOK(Buffer,Count))
-	{
-		Satellites=0;
-		
-		if(strncmp(Buffer+3,"GGA",3)==0)
-		{
-			int lock;
-			char hdop[16];
-			char Altitude[16];
-			
-#if 0      
-			Serial.print(Buffer+1);
-#endif
-			
-			if (sscanf(Buffer+7,"%16[^,],%16[^,],%c,%[^,],%c,%d,%d,%[^,],%[^,]",TimeString,LatString,&ns,LongString,&ew,&lock,&Satellites,hdop,Altitude) >= 1)
-			{ 
-				// $GPGGA,124943.00,5157.01557,N,00232.66381,W,1,09,1.01,149.3,M,48.6,M,,*42
-				
-				Temp[0]=TimeString[0];	Temp[1]=TimeString[1];	Temp[2]='\0';	GPS.Hours=atoi(Temp);
-				Temp[0]=TimeString[2];	Temp[1]=TimeString[3];	Temp[2]='\0';	GPS.Minutes=atoi(Temp);
-				Temp[0]=TimeString[4];	Temp[1]=TimeString[5];	Temp[2]='\0';	GPS.Seconds=atoi(Temp);
-				
-				GPS.SecondsInDay=(unsigned long)GPS.Hours*3600L+(unsigned long)GPS.Minutes*60L+(unsigned long)GPS.Seconds;
-				
-				if(GPS.UseHostPosition)
-				{
-					GPS.UseHostPosition--;
-				}
-				else if (Satellites >= 4)
-				{
-					GPS.Latitude=FixPosition(atof(LatString));
-					if(ns=='S')
-						GPS.Latitude=-GPS.Latitude;
-					
-					GPS.Longitude=FixPosition(atof(LongString));
-					if(ew=='W')
-						GPS.Longitude=-GPS.Longitude;
-				
-					GPS.PreviousAltitude=GPS.Altitude;
-					GPS.Altitude=(unsigned int)atof(Altitude);
-					
-					GPS.AscentRate=GPS.AscentRate*0.7+(GPS.Altitude-GPS.PreviousAltitude)*0.3;
-				}
-				
-				GPS.Satellites=Satellites;
-				
-				if(GPS.Altitude>GPS.MaximumAltitude)
-				{
-					GPS.MaximumAltitude=GPS.Altitude;
-				}
-				
-				if(		(GPS.Altitude < GPS.MinimumAltitude)
-					||	(GPS.MinimumAltitude == 0)				)
-				{
-					GPS.MinimumAltitude=GPS.Altitude;           
-				}
-				
-				// Launched?
-				if(		(GPS.AscentRate>=1.0)
-					&&	(GPS.Altitude>(GPS.MinimumAltitude+150))
-					&&	(GPS.FlightMode==fmIdle)					)
-				{
-					GPS.FlightMode=fmLaunched;
-					Serial.printf("*** LAUNCHED ***\n");
-				}
-
-				// Burst?
-				if(		(GPS.AscentRate<-10.0)
-					&&	(GPS.Altitude<(GPS.MaximumAltitude+50))
-					&&	(GPS.MaximumAltitude>=(GPS.MinimumAltitude+2000))
-					&&	(GPS.FlightMode==fmLaunched)						)
-				{
-					GPS.FlightMode=fmDescending;
-					Serial.printf("*** DESCENDING ***\n");
-				}
-				
-				// Landed?
-				if(		(GPS.AscentRate>=-0.1)
-					&&	(GPS.Altitude<=LANDING_ALTITUDE+2000)
-					&&	(GPS.FlightMode>=fmDescending)
-					&&	(GPS.FlightMode<fmLanded)				)
-				{
-					GPS.FlightMode=fmLanded;
-					Serial.printf("*** LANDED ***\n");
-				}
-			}
-			
-			Serial.print(GPS.Hours); Serial.print(":"); Serial.print(GPS.Minutes); Serial.print(":"); Serial.print(GPS.Seconds);Serial.print(" - ");
-			Serial.print(GPS.Latitude,6); Serial.print(',');Serial.print(GPS.Longitude,6);Serial.print(',');Serial.print(GPS.Altitude);Serial.print(',');
-			Serial.println(GPS.Satellites);
-		}
-		else if(strncmp((char *)Buffer+3,"GSV",3)==0)
-		{
-//			DisableNMEAProtocol(3);
-		}
-		else if(strncmp((char *)Buffer+3,"GLL",3)==0)
-		{
-//			DisableNMEAProtocol(1);
-		}
-		else if(strncmp((char *)Buffer+3,"GSA",3)==0)
-		{
-//			DisableNMEAProtocol(2);
-		}
-		else if(strncmp((char *)Buffer+3,"VTG",3)==0)
-		{
-//			DisableNMEAProtocol(5);
-		}
-		else if(strncmp((char *)Buffer+3,"RMC",3)==0)
-		{
-//			DisableNMEAProtocol(4);
-		}
-	}
-	else
-	{
-		Serial.println("Bad checksum");
-	}
-}
-  
 void CheckGPS(void)
 {
-	static unsigned long ModeTime=0;
-	static char Line[128];
-	static int Length=0;
-	unsigned char Character;
+	static uint8_t buffer[1024];
+	static uint16_t bufferptr=0;
+	uint8_t rxbyte=0x00;
+	static uint8_t lastbyte=0x00;
 	
+#if 0
+	if(Serial1.available())	{	rxbyte=Serial1.read();	Serial.write(rxbyte);	}
+	if(Serial.available())	{	rxbyte=Serial.read();	Serial1.write(rxbyte);	}
+#else
 	while(Serial1.available())
 	{
-		Character=Serial1.read();
+		rxbyte=Serial1.read();
 		
-		// first see if what we're receiving is NMEA or ubx.
-		
-		if(Character=='$')
+		if((lastbyte==0xb5)&&(rxbyte==0x62))
 		{
-			Line[0]=Character;
-			Length=1;
+			// this is the start of a ubx message so we have a full one stored, process it
+			
+			buffer[0]=lastbyte;
+			buffer[1]=rxbyte;
+			bufferptr=2;
 		}
-		else if(Length>=(sizeof(Line)-2))
+		else
 		{
-			Length=0;
-		}
-		else if((Length>0)&&(Character!='\r'))
-		{
-			Line[Length++]=Character;
-			if (Character=='\n')
+			// this is the middle of a ubx message
+			
+			if(bufferptr<sizeof(buffer))
 			{
-				Line[Length]='\0';
-				ProcessNMEA(Line,Length);
-				Length=0;
+				static uint16_t msglength=0;
+				
+				buffer[bufferptr++]=rxbyte;
+				
+				if((msglength==0)&&(bufferptr>=6))
+				{
+					msglength=*((uint16_t *)(buffer+4));
+				}
+				
+				if(bufferptr==(8+msglength))
+				{
+#if 0
+					int cnt;
+					for(cnt=0;cnt<8+msglength;cnt++)
+						Serial.printf("%02x ",buffer[cnt]);
+					
+					Serial.println("");
+#endif
+					
+					ProcessUBX(buffer,bufferptr);
+					msglength=0;
+					bufferptr=0;
+				}
+			}
+			else
+			{
+				// ignore the bytes
 			}
 		}
 		
-		if((Length==0)&&(Character==0xb5))
-		{
-			// This is the start of a ubx packet
-			Line[Length++]=Character;
-		}
-		else if((Length==1)&&(Character==0x62))
-		{
-			Line[Length++]=Character;
-		}
-		
-		
+		lastbyte=rxbyte;
+	}
+#endif
+}
+
+void ProcessUBX(uint8_t *buffer,uint16_t bufferptr)
+{
+	if(bufferptr<=6)
+	{
+		// this is an invalid ubx message, we need at least the ident, two bytes 
+		// for the message type and two bytes of checksum
+		return;
 	}
 	
-	if(millis()>=ModeTime)
-	{
-		RequiredFlightMode=(GPS.Altitude>1000)?6:3;    // 6 is airborne <1g mode; 3=Pedestrian mode
-		if (RequiredFlightMode!=GPS.GPSFlightMode)
-		{
-			GPS.GPSFlightMode=RequiredFlightMode;
-			
-			SetFlightMode(RequiredFlightMode);
-			Serial.println("Setting flight mode\n");
-		}
-		
-		ModeTime=millis()+60000;
-	}
+//	if(!CheckChecksum(buffer,bufferptr))
+//	{
+//		return;	// failed the checksum test
+//	}
+	
+	if((buffer[2]==0x01)&&(buffer[3]==0x02))	UnpackNAVPOSLLH(buffer);
+	if((buffer[2]==0x01)&&(buffer[3]==0x03))	UnpackNAVSTATUS(buffer);
+	if((buffer[2]==0x01)&&(buffer[3]==0x30))	UnpackNAVSVINFO(buffer);
+	
 }
+
+void UnpackNAVPOSLLH(uint8_t *buffer)
+{
+	Serial.println("\t\tNAV-POSLLH");
+	
+#if 0
+	Serial.print("\t\t");
+	
+	int cnt;
+	for(cnt=0;cnt<24;cnt++)
+		Serial.printf("%02x ",buffer[cnt]);
+	
+	Serial.println("");
+#endif
+	
+	iTOW=*((uint32_t *)(buffer+6));
+	lon=*((int32_t *)(buffer+10));
+	lat=*((int32_t *)(buffer+14));
+	height=*((int32_t *)(buffer+18));
+	hMSL=*((int32_t *)(buffer+22));
+	hAcc=*((uint32_t *)(buffer+26));
+	vAcc=*((uint32_t *)(buffer+30));
+	
+	Serial.printf("\t\tLat = %.6f, Lon = %.6f, ",lat/1e7,lon/1e7,height/1e3);
+	Serial.printf("height = %.1f\n",height/1e3);
+}
+
+void UnpackNAVSTATUS(uint8_t *buffer)
+{
+	Serial.println("NAV-STATUS");
+	
+#if 0
+	int cnt;
+	for(cnt=0;cnt<24;cnt++)
+		Serial.printf("%02x ",buffer[cnt]);
+	
+	Serial.println("");
+#endif
+#if 1
+	iTOW=*((uint32_t *)(buffer+6));
+	gpsFix=*(buffer+10);
+	flags=*(buffer+11);
+	fixStat=*(buffer+12);
+	flags2=*(buffer+13);
+	ttff=*((uint32_t *)(buffer+14));
+	msss=*((uint32_t *)(buffer+18));
+#endif
+	
+#if 0
+	Serial.println(gpsFix);
+#endif
+#if 1	
+	if(gpsFix==0x00)		Serial.println("No Fix");
+	else if(gpsFix==0x02)	Serial.println("2D Fix");
+	else if(gpsFix==0x03)	Serial.println("3D Fix");
+#endif
+}
+
+void UnpackNAVSVINFO(uint8_t *buffer)
+{
+	Serial.println("\tNAV-SVINFO");
+	
+	iTOW=*((uint32_t *)(buffer+6));
+	numCh=*(buffer+10);
+	globalFlags=*(buffer+11);
+	reserved2=*((uint16_t *)(buffer+12));
+	
+	uint8_t cnt;
+	for(cnt=0;cnt<numCh;cnt++)
+	{
+		chn[cnt]=*(buffer+14+12*cnt);
+		svid[cnt]=*(buffer+15+12*cnt);
+		svflags[cnt]=*(buffer+16+12*cnt);
+		quality[cnt]=*(buffer+17+12*cnt);
+		cno[cnt]=*(buffer+18+12*cnt);
+		elev[cnt]=*((int8_t *)(buffer+19+12*cnt));
+		azim[cnt]=*((int16_t *)(buffer+20+12*cnt));
+		prRes[cnt]=*((int32_t *)(buffer+22+12*cnt));
+	}
+	
+	Serial.printf("\tnumCh = %d\n",numCh);
+}
+
