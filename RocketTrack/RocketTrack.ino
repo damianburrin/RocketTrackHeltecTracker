@@ -147,31 +147,48 @@ void setup()
 	axp.setPowerOutPut(AXP192_DCDC1, AXP202_ON);
 	axp.setDCDC1Voltage(3300);
 	
-	Serial.printf("\tDCDC1: %s\n",axp.isDCDC1Enable()?"ENABLE":"DISABLE");
-	Serial.printf("\tDCDC2: %s\n",axp.isDCDC2Enable()?"ENABLE":"DISABLE");
-	Serial.printf("\tLDO2: %s\n",axp.isLDO2Enable()?"ENABLE":"DISABLE");
-	Serial.printf("\tLDO3: %s\n",axp.isLDO3Enable()?"ENABLE":"DISABLE");
-	Serial.printf("\tDCDC3: %s\n",axp.isDCDC3Enable()?"ENABLE":"DISABLE");
+	Serial.printf("\tDCDC1 2v5: %s\n",axp.isDCDC1Enable()?"ENABLE":"DISABLE");
+	Serial.printf("\tDCDC2 Not Used: %s\n",axp.isDCDC2Enable()?"ENABLE":"DISABLE");
+	Serial.printf("\tLDO2 LoRa: %s\n",axp.isLDO2Enable()?"ENABLE":"DISABLE");
+	Serial.printf("\tLDO3 GPS: %s\n",axp.isLDO3Enable()?"ENABLE":"DISABLE");
+	Serial.printf("\tDCDC3 3v3: %s\n",axp.isDCDC3Enable()?"ENABLE":"DISABLE");
 	Serial.printf("\tExten: %s\n",axp.isExtenEnable()?"ENABLE":"DISABLE");
 
 	if(axp.isChargeing()) 
 		Serial.println("Charging ...");
 	
-	SetupCrypto();
-	
-	SetupPressureSensor();
+//	SetupCrypto();	
+//	SetupPressureSensor();
 	SetupGPS();
-	SetupLoRa();
-	
+//	SetupLoRa();
 }
 
 void loop()
 {
-	CheckPressureSensor();
+#if 1
+	uint8_t ch;
+
+#if 1
+	while(Serial.available())
+	{
+		ch=Serial.read();
+		Serial1.write(ch);
+	}
+#endif
+#if 1
+	if(Serial1.available())
+	{
+		ch=Serial1.read();
+		Serial.write(ch);
+	}
+#endif
+#else
+//	CheckPressureSensor();
 	CheckGPS();
-	CheckLoRa();
+//	CheckLoRa();
 	CheckLEDs();
-	CheckHost();
+//	CheckHost();
+#endif
 }
 
 void CheckHost(void)
@@ -180,7 +197,7 @@ void CheckHost(void)
 	static unsigned int Length=0;
 	char Character;
 
-	while (Serial.available())
+	while(Serial.available())
 	{ 
 		Character=Serial.read();
 		

@@ -42,6 +42,20 @@ void SendUBX(unsigned char *Message,int Length)
 	}
 }
 
+void EnableRawMeasurements(void)
+{
+	// for v6.02 ROM
+	uint8_t cmd1[]={	0xb5,0x62,0x09,0x01,0x10,0x00,0xdc,0x0f,0x00,0x00,0x00,0x00,0x00,0x00,0x23,0xcc,0x21,0x00,0x00,0x00,0x02,0x10,0x27,0x0e	};
+	
+	// for v7.03 ROM
+	uint8_t cmd2[]={	0xb5,0x62,0x09,0x01,0x10,0x00,0xc8,0x16,0x00,0x00,0x00,0x00,0x00,0x00,0x97,0x69,0x21,0x00,0x00,0x00,0x02,0x10,0x2b,0x22	};
+	
+	SendUBX(cmd1,sizeof(cmd1));
+	SendUBX(cmd2,sizeof(cmd2));
+	
+	Serial.println("Enabling raw measurements ...");
+}
+
 void DisableNMEAProtocol(unsigned char Protocol)
 {
 	unsigned char Disable[]={	0xB5,0x62,0x06,0x01,0x08,0x00,0xF0,0x00,0x00,0x00,0x00,0x00,0x00,0x01,0x00,0x00	};
@@ -54,6 +68,14 @@ void DisableNMEAProtocol(unsigned char Protocol)
 	
 	Serial.print("Disable NMEA ");
 	Serial.println(Protocol);
+}
+
+void SetMessageRate(uint8_t id1,uint8_t id2,uint8_t rate)
+{
+	unsigned char Disable[]={	0xB5,0x62,0x06,0x01,0x08,0x00,id1,id2,0x00,rate,rate,0x00,0x00,0x01,0x00,0x00	};
+	
+	FixUBXChecksum(Disable,sizeof(Disable));
+	SendUBX(Disable,sizeof(Disable));
 }
 
 void SetFlightMode(byte NewMode)
@@ -94,6 +116,62 @@ void SetPowerMode(byte SavePower)
 }
 #endif
 
+void ChangeBaudRate(uint32_t BaudRate)
+{
+	char cmd[64];
+	
+	if(BaudRate==115200)	sprintf(cmd,"$PUBX,41,1,0007,0003,115200,0*18\r\n");
+	if(BaudRate==38400)		sprintf(cmd,"$PUBX,41,1,0007,0003,38400,0*20\r\n");
+	if(BaudRate==19200)		sprintf(cmd,"$PUBX,41,1,0007,0003,19200,0*25\r\n");
+	if(BaudRate==9600)		sprintf(cmd,"$PUBX,41,1,0007,0003,9600,0*10\r\n");
+	
+	if(strlen(cmd)>0)
+	{
+		SendUBX((uint8_t *)cmd,strlen(cmd));
+	}
+}
+
+void Enable_RXM_RAW_Message()
+{
+	uint8_t cmd[]={	0xb5,0x62,0x06,0x01,0x02,0x10,0x01,0x01,0x01,0x01,0x01,0x01,0x00,0x00	};
+	
+	FixUBXChecksum(cmd,sizeof(cmd));
+	SendUBX(cmd,sizeof(cmd));
+}
+
+void Enable_NAV_POSLLH_Message()
+{
+	uint8_t cmd[]={	0xb5,0x62,0x06,0x01,0x01,0x02,0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x00	};
+	
+	FixUBXChecksum(cmd,sizeof(cmd));
+	SendUBX(cmd,sizeof(cmd));
+}
+
+void Enable_NAV_STATUS_Message()
+{
+	uint8_t cmd[]={	0xb5,0x62,0x06,0x01,0x01,0x03,0x00,0x05,0x00,0x00,0x00,0x00,0x00,0x00	};
+	
+	FixUBXChecksum(cmd,sizeof(cmd));
+	SendUBX(cmd,sizeof(cmd));
+}
+
+void Enable_NAV_SVINFO_Message()
+{
+	uint8_t cmd[]={	0xb5,0x62,0x06,0x01,0x01,0x30,0x00,0x05,0x00,0x00,0x00,0x00,0x00,0x00	};
+	
+	FixUBXChecksum(cmd,sizeof(cmd));
+	SendUBX(cmd,sizeof(cmd));
+}
+
+void Set5Hz_Fix_Rate()
+{
+//	uint8_t cmd[]={	0xb5,0x62,0x06,0x08,0xc8,0x00,0x05,0x00,0x01,0x00,0x00,0x00	};
+	uint8_t cmd[]={	0xB5,0x62,0x06,0x08,0x06,0x00,0xC8,0x00,0x01,0x00,0x01,0x00,0xDE,0x6A	};
+	
+	FixUBXChecksum(cmd,sizeof(cmd));
+	SendUBX(cmd,sizeof(cmd));
+}
+
 void SetupGPS(void)
 {
 	// Switch GPS on,if we have control of that
@@ -106,7 +184,55 @@ void SetupGPS(void)
 	Serial.println("Open GPS port");
 	
 #if 1
+	// the gps will start at 9600 baud.  we need to change it to 115200, switch a load 
+	// of messages off, enable some ubx messages then change the measurement rate to 
+	// every 200ms
+	
 	Serial1.begin(9600,SERIAL_8N1,34,12);	// Pins for T-Beam v0.8 (3 push buttons) and up
+	
+	delay(1000);
+
+	
+	
+#if 0
+	DisableNMEAProtocol(0);		// GPGGA
+	DisableNMEAProtocol(1);		// GPGLL
+	DisableNMEAProtocol(2);		// GPGSA
+	DisableNMEAProtocol(3);		// GPGSV
+	DisableNMEAProtocol(4);		// GPRMC
+	DisableNMEAProtocol(5);		// GPVTG
+#endif
+#if 0	
+	EnableRawMeasurements();
+	Enable_RXM_RAW_Message();
+#endif
+	
+//	Enable_NAV_POSLLH_Message();
+//	Enable_NAV_STATUS_Message();
+//	Enable_NAV_SVINFO_Message();
+	
+	Set5Hz_Fix_Rate();
+	
+#if 0
+	ChangeBaudRate(38400);
+	
+	Serial1.flush();
+	Serial1.end();
+	
+	Serial1.begin(38400,SERIAL_8N1,34,12);	// Pins for T-Beam v0.8 (3 push buttons) and up
+#endif
+#if 1
+	SetMessageRate(0xf0,0x00,0x01);	// GPGGA
+	SetMessageRate(0xf0,0x01,0x00);	// GPGLL
+	SetMessageRate(0xf0,0x02,0x05);	// GPGSA
+	SetMessageRate(0xf0,0x03,0x05);	// GPGSV
+	SetMessageRate(0xf0,0x04,0x00);	// GPRMC
+	SetMessageRate(0xf0,0x05,0x00);	// GPVTG
+#endif	
+	
+	
+	
+	
 #else
 	Serial1.begin(9600,SERIAL_8N1,12,15);	// For version 0.7 (2 push buttons) and down
 #endif
@@ -242,23 +368,23 @@ void ProcessNMEA(char *Buffer,int Count)
 		}
 		else if(strncmp((char *)Buffer+3,"GSV",3)==0)
 		{
-			DisableNMEAProtocol(3);
+//			DisableNMEAProtocol(3);
 		}
 		else if(strncmp((char *)Buffer+3,"GLL",3)==0)
 		{
-			DisableNMEAProtocol(1);
+//			DisableNMEAProtocol(1);
 		}
 		else if(strncmp((char *)Buffer+3,"GSA",3)==0)
 		{
-			DisableNMEAProtocol(2);
+//			DisableNMEAProtocol(2);
 		}
 		else if(strncmp((char *)Buffer+3,"VTG",3)==0)
 		{
-			DisableNMEAProtocol(5);
+//			DisableNMEAProtocol(5);
 		}
 		else if(strncmp((char *)Buffer+3,"RMC",3)==0)
 		{
-			DisableNMEAProtocol(4);
+//			DisableNMEAProtocol(4);
 		}
 	}
 	else
@@ -277,6 +403,8 @@ void CheckGPS(void)
 	while(Serial1.available())
 	{
 		Character=Serial1.read();
+		
+		// first see if what we're receiving is NMEA or ubx.
 		
 		if(Character=='$')
 		{
@@ -297,12 +425,24 @@ void CheckGPS(void)
 				Length=0;
 			}
 		}
+		
+		if((Length==0)&&(Character==0xb5))
+		{
+			// This is the start of a ubx packet
+			Line[Length++]=Character;
+		}
+		else if((Length==1)&&(Character==0x62))
+		{
+			Line[Length++]=Character;
+		}
+		
+		
 	}
 	
-	if (millis() >= ModeTime)
+	if(millis()>=ModeTime)
 	{
-		RequiredFlightMode = (GPS.Altitude > 1000) ? 6 : 3;    // 6 is airborne <1g mode; 3=Pedestrian mode
-		if (RequiredFlightMode != GPS.GPSFlightMode)
+		RequiredFlightMode=(GPS.Altitude>1000)?6:3;    // 6 is airborne <1g mode; 3=Pedestrian mode
+		if (RequiredFlightMode!=GPS.GPSFlightMode)
 		{
 			GPS.GPSFlightMode=RequiredFlightMode;
 			
