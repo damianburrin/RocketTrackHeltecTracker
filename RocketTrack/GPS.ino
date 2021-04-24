@@ -37,13 +37,13 @@ void SendUBX(unsigned char *Message,int Length)
 	LastCommand2=Message[3];
 	
 	for(cnt=0;cnt<Length;cnt++)
-	{
 		Serial1.write(Message[cnt]);
-	}
 }
 
 void EnableRawMeasurements(void)
 {
+	// send both RAM hacks, doesn't seem to hurt if you do both
+	
 	// for v6.02 ROM
 	uint8_t cmd1[]={	0xb5,0x62,0x09,0x01,0x10,0x00,0xdc,0x0f,0x00,0x00,0x00,0x00,0x00,0x00,0x23,0xcc,0x21,0x00,0x00,0x00,0x02,0x10,0x27,0x0e	};
 	
@@ -165,7 +165,6 @@ void Enable_NAV_SVINFO_Message()
 
 void Set5Hz_Fix_Rate()
 {
-//	uint8_t cmd[]={	0xb5,0x62,0x06,0x08,0xc8,0x00,0x05,0x00,0x01,0x00,0x00,0x00	};
 	uint8_t cmd[]={	0xB5,0x62,0x06,0x08,0x06,0x00,0xC8,0x00,0x01,0x00,0x01,0x00,0xDE,0x6A	};
 	
 	FixUBXChecksum(cmd,sizeof(cmd));
@@ -191,25 +190,6 @@ void SetupGPS(void)
 	Serial1.begin(9600,SERIAL_8N1,34,12);	// Pins for T-Beam v0.8 (3 push buttons) and up
 	
 	delay(1000);
-
-	
-	
-#if 0
-	DisableNMEAProtocol(0);		// GPGGA
-	DisableNMEAProtocol(1);		// GPGLL
-	DisableNMEAProtocol(2);		// GPGSA
-	DisableNMEAProtocol(3);		// GPGSV
-	DisableNMEAProtocol(4);		// GPRMC
-	DisableNMEAProtocol(5);		// GPVTG
-#endif
-#if 0	
-	EnableRawMeasurements();
-	Enable_RXM_RAW_Message();
-#endif
-	
-//	Enable_NAV_POSLLH_Message();
-//	Enable_NAV_STATUS_Message();
-//	Enable_NAV_SVINFO_Message();
 	
 	Set5Hz_Fix_Rate();
 	
@@ -221,7 +201,8 @@ void SetupGPS(void)
 	
 	Serial1.begin(38400,SERIAL_8N1,34,12);	// Pins for T-Beam v0.8 (3 push buttons) and up
 #endif
-#if 1
+
+#if 0
 	SetMessageRate(0xf0,0x00,0x01);	// GPGGA
 	SetMessageRate(0xf0,0x01,0x00);	// GPGLL
 	SetMessageRate(0xf0,0x02,0x05);	// GPGSA
@@ -230,7 +211,23 @@ void SetupGPS(void)
 	SetMessageRate(0xf0,0x05,0x00);	// GPVTG
 #endif	
 	
+#if 1
+	// turn off all NMEA output
 	
+	SetMessageRate(0xf0,0x00,0x00);	// GPGGA
+	SetMessageRate(0xf0,0x01,0x00);	// GPGLL
+	SetMessageRate(0xf0,0x02,0x00);	// GPGSA
+	SetMessageRate(0xf0,0x03,0x00);	// GPGSV
+	SetMessageRate(0xf0,0x04,0x00);	// GPRMC
+	SetMessageRate(0xf0,0x05,0x00);	// GPVTG
+#endif	
+#if 1
+	// turn on the useful UBX messages
+	
+	SetMessageRate(0x01,0x02,0x01);	// NAV-POSLLH every fix
+	SetMessageRate(0x01,0x03,0x05);	// NAV-STATUS every 5th fix
+	SetMessageRate(0x01,0x30,0x05);	// NAV-SVINFO every 5th fix
+#endif
 	
 	
 #else
