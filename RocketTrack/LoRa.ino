@@ -17,8 +17,6 @@
 |                                                     |
 \*---------------------------------------------------*/
 
-#ifdef LORA_NSS
-
 #include <SPI.h>
 #include <string.h>
 
@@ -434,4 +432,12 @@ void CheckLoRa(void)
 	SendLoRaPacket(TXPacket,TX_PACKET_LENGTH);
 }
 
-#endif
+int LORACommandHandler(uint8_t *cmd,uint16_t cmdptr)
+{
+	
+	
+	
+	
+	return(1);
+}
+

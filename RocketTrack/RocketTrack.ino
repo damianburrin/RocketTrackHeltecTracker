@@ -187,68 +187,52 @@ void loop()
 	CheckGPS();
 //	CheckLoRa();
 //	CheckLEDs();
-//	CheckHost();
+	CheckHost();
 #endif
 }
 
 void CheckHost(void)
 {
-	static char Line[80];
-	static unsigned int Length=0;
-	char Character;
+	static uint8_t cmd[128];
+	static uint16_t cmdptr=0;
+	char rxbyte;
 
 	while(Serial.available())
 	{ 
-		Character=Serial.read();
+		rxbyte=Serial.read();
 		
-		if(Character=='~')
+//		Serial.write(rxbyte);
+		
+		cmd[cmdptr++]=rxbyte;
+		
+		if((rxbyte=='\r')||(rxbyte=='\n'))
 		{
-			Line[0]=Character;
-			Length=1;
+			ProcessCommand(cmd,cmdptr);
+			cmdptr=0;
 		}
-		else if(Character=='\r')
+		else if(cmdptr>=sizeof(cmd))
 		{
-			Line[Length]='\0';
-			ProcessCommand(Line+1);
-			Length=0;
-		}
-		else if(Length>=sizeof(Line))
-		{
-			Length=0;
-		}
-		else if(Length>0)
-		{
-			Line[Length++]=Character;
+			cmdptr--;
 		}
 	}
 }
 
-void ProcessCommand(char *Line)
+void ProcessCommand(uint8_t *cmd,uint16_t cmdptr)
 {
 	int OK=0;
 	
-	switch(Line[0])
+//	Serial.println(cmd[0]);
+	
+	switch(cmd[0]|0x20)
 	{
-		case 'G':
-//					OK=ProcessGPSCommand(Line+1);
+		case 'g':
+					OK=GPSCommandHandler(cmd,cmdptr);
 					break;
-					
-		case 'C':
-//					OK=ProcessCommonCommand(Line+1);
+		
+		case 'l':
+					OK=LORACommandHandler(cmd,cmdptr);
 					break;
-					
-		case 'L':
-//					OK = ProcessLORACommand(Line+1);
-					break;
-					
-		case 'A':
-//					OK = ProcessAPRSCommand(Line+1);
-					break;
-					
-		case 'F':
-					OK=ProcessFieldCommand(Line+1);
-					break;
-					
+		
 		default:	// do nothing
 					break;
 	}
@@ -257,14 +241,14 @@ void ProcessCommand(char *Line)
 	else	{	Serial.println("?");	}
 }
 
-int ProcessFieldCommand(char *Line)
+int ProcessFieldCommand(char *cmd)
 {
 	int OK = 0;
 
-	if (Line[0] == 'P')
+	if (cmd[0] == 'P')
 	{
 		GPS.PreviousAltitude = GPS.Altitude;
-		sscanf(Line+1,"%f,%f,%ld", &GPS.Latitude, &GPS.Longitude, &GPS.Altitude);
+		sscanf(cmd+1,"%f,%f,%ld", &GPS.Latitude, &GPS.Longitude, &GPS.Altitude);
 		GPS.UseHostPosition = 5;
 		GPS.AscentRate = GPS.AscentRate * 0.7 + (GPS.Altitude - GPS.PreviousAltitude) * 0.3;
 		OK = 1;

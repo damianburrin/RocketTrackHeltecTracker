@@ -1,4 +1,6 @@
 
+#define DEBUG 1
+
 #define MAX_CHANNELS 50
 
 // Globals
@@ -42,21 +44,6 @@ int32_t height=0;
 int32_t hMSL=0;
 uint32_t hAcc=0;
 uint32_t vAcc=0;
-	
-
-
-
-
-
-
-
-
-
-char Hex(int rxbyte)
-{
-	char HexTable[] = "0123456789ABCDEF";
-	return HexTable[rxbyte];
-}
 
 void CalculateChecksum(uint8_t *buffer,uint16_t bufferptr,uint8_t *CK_A,uint8_t *CK_B)
 {
@@ -72,20 +59,20 @@ void CalculateChecksum(uint8_t *buffer,uint16_t bufferptr,uint8_t *CK_A,uint8_t 
 	}
 }
 
-void FixUBXChecksum(unsigned char *Message,int bufferptr)
+void FixUBXChecksum(uint8_t *buffer,uint16_t bufferptr)
 { 
-	int cnt;
-	unsigned char CK_A=0;
-	unsigned char CK_B=0;
+	uint16_t cnt;
+	uint8_t CK_A=0;
+	uint8_t CK_B=0;
 	
 	for(cnt=2;cnt<(bufferptr-2);cnt++)
 	{
-		CK_A+=Message[cnt];
+		CK_A+=buffer[cnt];
 		CK_B+=CK_A;
 	}
 	
-	Message[bufferptr-2]=CK_A;
-	Message[bufferptr-1]=CK_B;
+	buffer[bufferptr-2]=CK_A;
+	buffer[bufferptr-1]=CK_B;
 }
 
 bool CheckChecksum(uint8_t *buffer,uint16_t bufferptr)
@@ -99,9 +86,9 @@ bool CheckChecksum(uint8_t *buffer,uint16_t bufferptr)
 	else															return(0);
 }
 
-void SendUBX(unsigned char *Message,int bufferptr)
+void SendUBX(uint8_t *Message,uint16_t bufferptr)
 {
-	int cnt;
+	uint16_t cnt;
 	
 	LastCommand1=Message[2];
 	LastCommand2=Message[3];
@@ -123,7 +110,9 @@ void EnableRawMeasurements(void)
 	SendUBX(cmd1,sizeof(cmd1));
 	SendUBX(cmd2,sizeof(cmd2));
 	
+#if (DEBUG>0)
 	Serial.println("Enabling raw measurements ...");
+#endif
 }
 
 void DisableNMEAProtocol(unsigned char Protocol)
@@ -136,8 +125,10 @@ void DisableNMEAProtocol(unsigned char Protocol)
 	
 	SendUBX(Disable,sizeof(Disable));
 	
+#if (DEBUG>0)
 	Serial.print("Disable NMEA ");
 	Serial.println(Protocol);
+#endif
 }
 
 void SetMessageRate(uint8_t id1,uint8_t id2,uint8_t rate)
@@ -201,14 +192,6 @@ void ChangeBaudRate(uint32_t BaudRate)
 	}
 }
 
-void Enable_RXM_RAW_Message()
-{
-	uint8_t cmd[]={	0xb5,0x62,0x06,0x01,0x02,0x10,0x01,0x01,0x01,0x01,0x01,0x01,0x00,0x00	};
-	
-	FixUBXChecksum(cmd,sizeof(cmd));
-	SendUBX(cmd,sizeof(cmd));
-}
-
 void Set5Hz_Fix_Rate()
 {
 	uint8_t cmd[]={	0xB5,0x62,0x06,0x08,0x06,0x00,0xC8,0x00,0x01,0x00,0x01,0x00,0xDE,0x6A	};
@@ -219,14 +202,15 @@ void Set5Hz_Fix_Rate()
 
 void SetupGPS(void)
 {
+#if 0
 	// Switch GPS on,if we have control of that
-	
-#ifdef GPS_ON
 	pinMode(GPS_ON,OUTPUT);
 	digitalWrite(GPS_ON,1);
 #endif
 	
+#if (DEBUG>0)
 	Serial.println("Open GPS port");
+#endif
 	
 #if 1
 	// the gps will start at 9600 baud.  we need to change it to 115200, switch a load 
@@ -289,30 +273,6 @@ void SetupGPS(void)
 #endif
 }
 
-int GPSChecksumOK(char *Buffer,int Count)
-{
-	unsigned char XOR=0;
-	unsigned char cnt;
-	
-	for(cnt=1;cnt<(Count-4);cnt++)
-		XOR^=Buffer[cnt];
-	
-	return (Buffer[Count-4]=='*')&&(Buffer[Count-3]==Hex(XOR>>4))&&(Buffer[Count-2]==Hex(XOR&15));
-}
-
-float FixPosition(float Position)
-{
-	float Minutes;
-	float Seconds;
-	
-	Position=Position/100;
-	
-	Minutes=trunc(Position);
-	Seconds=fmod(Position,1);
-	
-	return(Minutes+Seconds*5/3);
-}
-
 void CheckGPS(void)
 {
 	static uint8_t buffer[1024];
@@ -331,7 +291,6 @@ void CheckGPS(void)
 		if((lastbyte==0xb5)&&(rxbyte==0x62))
 		{
 			// this is the start of a ubx message so we have a full one stored, process it
-			
 			buffer[0]=lastbyte;
 			buffer[1]=rxbyte;
 			bufferptr=2;
@@ -353,7 +312,7 @@ void CheckGPS(void)
 				
 				if(bufferptr==(8+msglength))
 				{
-#if 0
+#if (DEBUG>2)
 					int cnt;
 					for(cnt=0;cnt<8+msglength;cnt++)
 						Serial.printf("%02x ",buffer[cnt]);
@@ -399,17 +358,9 @@ void ProcessUBX(uint8_t *buffer,uint16_t bufferptr)
 
 void UnpackNAVPOSLLH(uint8_t *buffer)
 {
+//#if (DEBUG>1)
 	Serial.println("\t\tNAV-POSLLH");
-	
-#if 0
-	Serial.print("\t\t");
-	
-	int cnt;
-	for(cnt=0;cnt<24;cnt++)
-		Serial.printf("%02x ",buffer[cnt]);
-	
-	Serial.println("");
-#endif
+//#endif
 	
 	iTOW=*((uint32_t *)(buffer+6));
 	lon=*((int32_t *)(buffer+10));
@@ -419,22 +370,18 @@ void UnpackNAVPOSLLH(uint8_t *buffer)
 	hAcc=*((uint32_t *)(buffer+26));
 	vAcc=*((uint32_t *)(buffer+30));
 	
+#if (DEBUG>2)
 	Serial.printf("\t\tLat = %.6f, Lon = %.6f, ",lat/1e7,lon/1e7,height/1e3);
 	Serial.printf("height = %.1f\n",height/1e3);
+#endif
 }
 
 void UnpackNAVSTATUS(uint8_t *buffer)
 {
+#if (DEBUG>1)
 	Serial.println("NAV-STATUS");
-	
-#if 0
-	int cnt;
-	for(cnt=0;cnt<24;cnt++)
-		Serial.printf("%02x ",buffer[cnt]);
-	
-	Serial.println("");
 #endif
-#if 1
+	
 	iTOW=*((uint32_t *)(buffer+6));
 	gpsFix=*(buffer+10);
 	flags=*(buffer+11);
@@ -442,12 +389,8 @@ void UnpackNAVSTATUS(uint8_t *buffer)
 	flags2=*(buffer+13);
 	ttff=*((uint32_t *)(buffer+14));
 	msss=*((uint32_t *)(buffer+18));
-#endif
 	
-#if 0
-	Serial.println(gpsFix);
-#endif
-#if 1	
+#if (DEBUG>2)
 	if(gpsFix==0x00)		Serial.println("No Fix");
 	else if(gpsFix==0x02)	Serial.println("2D Fix");
 	else if(gpsFix==0x03)	Serial.println("3D Fix");
@@ -456,7 +399,9 @@ void UnpackNAVSTATUS(uint8_t *buffer)
 
 void UnpackNAVSVINFO(uint8_t *buffer)
 {
+#if (DEBUG>1)
 	Serial.println("\tNAV-SVINFO");
+#endif
 	
 	iTOW=*((uint32_t *)(buffer+6));
 	numCh=*(buffer+10);
@@ -476,6 +421,60 @@ void UnpackNAVSVINFO(uint8_t *buffer)
 		prRes[cnt]=*((int32_t *)(buffer+22+12*cnt));
 	}
 	
+#if (DEBUG>2)
 	Serial.printf("\tnumCh = %d\n",numCh);
+#endif
+}
+
+int GPSCommandHandler(uint8_t *cmd,uint16_t cmdptr)
+{
+#if (DEBUG>0)
+	Serial.println((char *)cmd);
+#endif
+	
+	int retval=0;
+	
+	Serial.println(cmd[1]);
+	
+	switch(cmd[1]|0x20)
+	{
+		case 'p':	
+					Serial.printf("Lat = %.6f, Lon = %.6f, ",lat/1e7,lon/1e7,height/1e3);
+					Serial.printf("height = %.1f\n",height/1e3);
+					retval=1;
+					break;
+		
+		case 'f':	
+					if(gpsFix==0x00)		Serial.println("No Fix");
+					else if(gpsFix==0x02)	Serial.println("2D Fix");
+					else if(gpsFix==0x03)	Serial.println("3D Fix");
+					retval=1;
+					break;
+		
+		case 's':	
+					uint8_t cnt;
+					Serial.println("Chan\tPRN\tElev\tAzim\tC/No");
+					for(cnt=0;cnt<numCh;cnt++)
+					{
+						Serial.print(cnt);	Serial.print("\t"); Serial.print(svid[cnt]);	Serial.print("\t");	Serial.print(elev[cnt]);	Serial.print("\t");	Serial.print(azim[cnt]);	Serial.print("\t");	Serial.println(cno[cnt]);
+					}
+					retval=1;
+					break;
+		
+		
+		
+		
+		
+		
+		
+		default:	retval=0;
+					break;
+	}
+	
+	
+	
+	
+	
+	return(retval);
 }
 
