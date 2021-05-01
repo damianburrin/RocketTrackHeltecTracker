@@ -28,10 +28,7 @@ void CheckLEDs(void)
 {
 	if(millis()>=NextLEDs)
 	{
-		if(GPS.Altitude>100)		ControlLED(AXP20X_LED_OFF);
-		else if(GPS.Satellites>=4)	ControlLED(AXP20X_LED_BLINK_1HZ);
-		else				ControlLED(AXP20X_LED_BLINK_4HZ);
-		
+		ControlLED(AXP20X_LED_BLINK_1HZ);
 		NextLEDs=millis()+1000L;
 	}
 }

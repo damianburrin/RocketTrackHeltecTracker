@@ -1,2 +1,2 @@
 
-#define TX_PACKET_LENGTH 16
+#define MAX_TX_PACKET_LENGTH 64

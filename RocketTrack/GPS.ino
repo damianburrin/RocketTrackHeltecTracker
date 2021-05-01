@@ -1,6 +1,8 @@
 
 #define DEBUG 1
 
+#define GPS_PASSTHROUGH 0
+
 #define MAX_CHANNELS 50
 
 // Globals
@@ -11,6 +13,7 @@ byte LastCommand1=0;
 byte LastCommand2=0;
 byte HaveHadALock=0;
 
+bool gps_live_mode=0;
 
 // these are all unpacked from UBX messages
 
@@ -273,20 +276,23 @@ void SetupGPS(void)
 #endif
 }
 
-void CheckGPS(void)
+void PollGPS(void)
 {
 	static uint8_t buffer[1024];
 	static uint16_t bufferptr=0;
 	uint8_t rxbyte=0x00;
 	static uint8_t lastbyte=0x00;
 	
-#if 0
+#if GPS_PASSTHROUGH
 	if(Serial1.available())	{	rxbyte=Serial1.read();	Serial.write(rxbyte);	}
 	if(Serial.available())	{	rxbyte=Serial.read();	Serial1.write(rxbyte);	}
 #else
 	while(Serial1.available())
 	{
 		rxbyte=Serial1.read();
+		
+		if(gps_live_mode)
+			Serial.write(rxbyte);
 		
 		if((lastbyte==0xb5)&&(rxbyte==0x62))
 		{
@@ -358,9 +364,9 @@ void ProcessUBX(uint8_t *buffer,uint16_t bufferptr)
 
 void UnpackNAVPOSLLH(uint8_t *buffer)
 {
-//#if (DEBUG>1)
+#if (DEBUG>1)
 	Serial.println("\t\tNAV-POSLLH");
-//#endif
+#endif
 	
 	iTOW=*((uint32_t *)(buffer+6));
 	lon=*((int32_t *)(buffer+10));
@@ -434,46 +440,47 @@ int GPSCommandHandler(uint8_t *cmd,uint16_t cmdptr)
 	
 	int retval=0;
 	
-	Serial.println(cmd[1]);
-	
 	switch(cmd[1]|0x20)
 	{
-		case 'p':	
+		case 'p':	// position fix
+					
 					Serial.printf("Lat = %.6f, Lon = %.6f, ",lat/1e7,lon/1e7,height/1e3);
 					Serial.printf("height = %.1f\n",height/1e3);
 					retval=1;
 					break;
 		
-		case 'f':	
+		case 'f':	// fix status
+					
 					if(gpsFix==0x00)		Serial.println("No Fix");
 					else if(gpsFix==0x02)	Serial.println("2D Fix");
 					else if(gpsFix==0x03)	Serial.println("3D Fix");
 					retval=1;
 					break;
 		
-		case 's':	
+		case 's':	// satellite info
+					
 					uint8_t cnt;
 					Serial.println("Chan\tPRN\tElev\tAzim\tC/No");
 					for(cnt=0;cnt<numCh;cnt++)
 					{
 						Serial.print(cnt);	Serial.print("\t"); Serial.print(svid[cnt]);	Serial.print("\t");	Serial.print(elev[cnt]);	Serial.print("\t");	Serial.print(azim[cnt]);	Serial.print("\t");	Serial.println(cno[cnt]);
 					}
+					
 					retval=1;
 					break;
 		
-		
-		
-		
-		
-		
+		case 'l':	// live mode toggle
+					
+					gps_live_mode=!gps_live_mode;
+					retval=1;
+					break;
+					
+		case 't':	
+					break;
 		
 		default:	retval=0;
 					break;
 	}
-	
-	
-	
-	
 	
 	return(retval);
 }

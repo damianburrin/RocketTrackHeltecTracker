@@ -22,40 +22,10 @@ s|                                                                              
 #define POWERSAVING	                      // Comment out to disable GPS power saving
 
 // LORA settings
-#define LORA_PAYLOAD_ID   "TTGO"            // Do not use spaces.
-#define LORA_SLOT            -1
-#define LORA_REPEAT_SLOT_1   -1
-#define LORA_REPEAT_SLOT_2   -1
-
-#define LORA_RTTY_FREQ    434.400               // For devices that are frequency-agile
-#define LORA_RTTY_BAUD       300
-#define LORA_RTTY_SHIFT      488
-#define LORA_RTTY_COUNT       0           // n RTTY packets.  Set to 0 to disable
-#define LORA_RTTY_EVERY       3           // After every n LoRa packets
-#define LORA_RTTY_PREAMBLE    8
-
-#define LORA_TIME_INDEX      2
-#define LORA_TIME_MUTLIPLER  2
-#define LORA_TIME_OFFSET     1
-#define LORA_PACKET_TIME    500
-#define LORA_FREQUENCY       434.450
-#define LORA_OFFSET           0         // Frequency to add in kHz to make Tx frequency accurate
-
-#define LORA_ID             0
-#define LORA_CYCLETIME      0                // Set to zero to send continuously
-#define LORA_MODE           1
-#define LORA_BINARY         0
-#define LORA_CALL_FREQ 		433.650
-#define LORA_CALL_MODE		5				
-#define LORA_CALL_COUNT		0				// Set to zero to disable calling mode
-
-// Landing prediction
-#define INITIAL_CDA         0.7
-#define PAYLOAD_WEIGHT      1.0
-#define LANDING_ALTITUDE    100
-
-// Cutdown settings
-// #define CUTDOWN             A2
+#define LORA_FREQUENCY	434.650
+#define LORA_OFFSET		0         // Frequency to add in kHz to make Tx frequency accurate
+#define LORA_ID			0
+#define LORA_MODE		0
 
 
 //------------------------------------------------------------------------------------------------------
@@ -79,47 +49,44 @@ AXP20X_Class axp;
 //
 //  Globals
 
-struct TBinaryPacket
-{
-	uint8_t 	PayloadIDs;
-	uint16_t	Counter;
-	uint16_t	BiSeconds;
-	float		Latitude;
-	float		Longitude;
-	int32_t  	Altitude;
-};  //  __attribute__ ((packed));
-
-typedef enum {fmIdle, fmLaunched, fmDescending, fmLanding, fmLanded} TFlightMode;
-
-struct TGPS
-{
-	int Hours, Minutes, Seconds;
-	unsigned long SecondsInDay;					// Time in seconds since midnight
-	float Longitude, Latitude;
-	long Altitude, MinimumAltitude, MaximumAltitude, PreviousAltitude;
-	unsigned int Satellites;
-	byte FixType;
-	byte psm_status;
-	float InternalTemperature;
-	float BatteryVoltage;
-	float ExternalTemperature;
-	float Pressure;
-	float AscentRate;
-	unsigned int BoardCurrent;
-	unsigned int errorstatus;
-	byte GPSFlightMode;
-	TFlightMode FlightMode;
-	byte PowerMode;
-	int CutdownStatus;
-	float PredictedLatitude;
-	float PredictedLongitude;
-	float CDA;
-	int UseHostPosition;
-	int TimeTillLanding;
-	float PredictedLandingSpeed;
- } GPS;
-
-
+// struct TBinaryPacket
+// {
+// 	uint8_t 	PayloadIDs;
+// 	uint16_t	Counter;
+// 	uint16_t	BiSeconds;
+// 	float		Latitude;
+// 	float		Longitude;
+// 	int32_t  	Altitude;
+// };  //  __attribute__ ((packed));
+// 
+// struct TGPS
+// {
+// 	int Hours, Minutes, Seconds;
+// 	unsigned long SecondsInDay;					// Time in seconds since midnight
+// 	float Longitude, Latitude;
+// 	long Altitude, MinimumAltitude, MaximumAltitude, PreviousAltitude;
+// 	unsigned int Satellites;
+// 	byte FixType;
+// 	byte psm_status;
+// 	float InternalTemperature;
+// 	float BatteryVoltage;
+// 	float ExternalTemperature;
+// 	float Pressure;
+// 	float AscentRate;
+// 	unsigned int BoardCurrent;
+// 	unsigned int errorstatus;
+// 	byte GPSFlightMode;
+// 	TFlightMode FlightMode;
+// 	byte PowerMode;
+// 	int CutdownStatus;
+// 	float PredictedLatitude;
+// 	float PredictedLongitude;
+// 	float CDA;
+// 	int UseHostPosition;
+// 	int TimeTillLanding;
+// 	float PredictedLandingSpeed;
+//  } GPS;
+// 
 int SentenceCounter=0;
 #define SEQUENCE_LENGTH 120
 
@@ -160,7 +127,7 @@ void setup()
 //	SetupCrypto();	
 //	SetupPressureSensor();
 	SetupGPS();
-//	SetupLoRa();
+	SetupLoRa();
 }
 
 void loop()
@@ -183,15 +150,15 @@ void loop()
 	}
 #endif
 #else
-//	CheckPressureSensor();
-	CheckGPS();
-//	CheckLoRa();
-//	CheckLEDs();
-	CheckHost();
+//	PollPressureSensor();
+	PollGPS();
+	PollLoRa();
+//	PollLEDs();
+	PollSerial();
 #endif
 }
 
-void CheckHost(void)
+void PollSerial(void)
 {
 	static uint8_t cmd[128];
 	static uint16_t cmdptr=0;
@@ -201,7 +168,7 @@ void CheckHost(void)
 	{ 
 		rxbyte=Serial.read();
 		
-//		Serial.write(rxbyte);
+		Serial.write(rxbyte);
 		
 		cmd[cmdptr++]=rxbyte;
 		
@@ -243,17 +210,7 @@ void ProcessCommand(uint8_t *cmd,uint16_t cmdptr)
 
 int ProcessFieldCommand(char *cmd)
 {
-	int OK = 0;
+	int OK=0;
 
-	if (cmd[0] == 'P')
-	{
-		GPS.PreviousAltitude = GPS.Altitude;
-		sscanf(cmd+1,"%f,%f,%ld", &GPS.Latitude, &GPS.Longitude, &GPS.Altitude);
-		GPS.UseHostPosition = 5;
-		GPS.AscentRate = GPS.AscentRate * 0.7 + (GPS.Altitude - GPS.PreviousAltitude) * 0.3;
-		OK = 1;
-	}
-	
 	return OK;
 }
-
