@@ -168,7 +168,7 @@ void PollSerial(void)
 	{ 
 		rxbyte=Serial.read();
 		
-		Serial.write(rxbyte);
+//		Serial.write(rxbyte);
 		
 		cmd[cmdptr++]=rxbyte;
 		

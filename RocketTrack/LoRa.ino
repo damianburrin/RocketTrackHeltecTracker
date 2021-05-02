@@ -132,7 +132,11 @@ bool LoRaTransmit=0;
 uint32_t TXStartTimeMillis;
 
 double lora_frequency=LORA_FREQUENCY;
+double lora_offset=LORA_OFFSET;
 uint8_t lora_mode=LORA_MODE;
+
+bool lora_constant_transmit=false;
+int next_transmit=0;
 
 tLoRaMode LoRaMode;
 byte currentMode=0x81;
@@ -161,30 +165,10 @@ uint32_t LastLoRaTX=0;
 void SetupLoRa(void)
 {
 	setupRFM98(LORA_FREQUENCY,LORA_MODE);
-	
-/*
-	if (LORA_RTTY_BAUD == 50)
-	{
-		FSKBitRate=40000;
-		FSKOverSample=2;
-		RTTYBitLength=7;
-	}
-	else
-	{
-		// 300 baud
-		FSKBitRate=13333;
-		FSKOverSample=1;
-		RTTYBitLength=8;
-	}
-*/
 }
 
 void setupRFM98(double Frequency,int Mode)
 {
-	int ErrorCoding;
-	int Bandwidth;
-	int SpreadingFactor;
-	int LowDataRateOptimize;
 	int PayloadLength;
 	
 	// initialize the pins
@@ -208,23 +192,9 @@ void setupRFM98(double Frequency,int Mode)
 	setLoRaMode();
 
 	// Frequency
-	setFrequency(Frequency+LORA_OFFSET/1000.0);
-
-	// LoRa settings for various modes.  We support modes 2 (repeater mode), 1 (normally used for SSDV) and 0 (normal slow telemetry mode).
+	setFrequency(Frequency+lora_offset/1000.0);
 	
-	if(Mode==5)			{	ImplicitOrExplicit=EXPLICIT_MODE;	ErrorCoding=ERROR_CODING_4_8;	Bandwidth=BANDWIDTH_41K7;	SpreadingFactor=SPREADING_11;	LowDataRateOptimize=0;		}
-	else if(Mode==2)	{	ImplicitOrExplicit=EXPLICIT_MODE;	ErrorCoding=ERROR_CODING_4_8;	Bandwidth=BANDWIDTH_62K5;	SpreadingFactor=SPREADING_8;	LowDataRateOptimize=0;		}
-	else if(Mode==1)	{	ImplicitOrExplicit=IMPLICIT_MODE;	ErrorCoding=ERROR_CODING_4_5;	Bandwidth=BANDWIDTH_20K8;	SpreadingFactor=SPREADING_6;	LowDataRateOptimize=0;		}
-	else				{	ImplicitOrExplicit=EXPLICIT_MODE;	ErrorCoding=ERROR_CODING_4_8;	Bandwidth=BANDWIDTH_20K8;	SpreadingFactor=SPREADING_11;	LowDataRateOptimize=0x08;	}
-	
-	writeRegister(REG_MODEM_CONFIG,ImplicitOrExplicit|ErrorCoding|Bandwidth);
-	writeRegister(REG_MODEM_CONFIG2,SpreadingFactor|CRC_ON);
-	writeRegister(REG_MODEM_CONFIG3,0x04|LowDataRateOptimize);	// 0x04: AGC sets LNA gain
-	
-	// writeRegister(REG_DETECT_OPT, (SpreadingFactor == SPREADING_6) ? 0x05 : 0x03);					// 0x05 For SF6; 0x03 otherwise
-	writeRegister(REG_DETECT_OPT,(readRegister(REG_DETECT_OPT)&0xF8)|((SpreadingFactor==SPREADING_6)?0x05:0x03));  // 0x05 For SF6; 0x03 otherwise
-	
-	writeRegister(REG_DETECTION_THRESHOLD,(SpreadingFactor==SPREADING_6)?0x0C:0x0A);		// 0x0C for SF6, 0x0A otherwise  
+	setLoraOperatingMode(LORA_MODE);
 	
 	writeRegister(REG_PAYLOAD_LENGTH,PayloadLength);
 	
@@ -236,6 +206,38 @@ void setupRFM98(double Frequency,int Mode)
 	setMode(RF98_MODE_STANDBY);
 	
 	Serial.println("Setup Complete");
+}
+
+void setLoraOperatingMode(int Mode)
+{
+	int ErrorCoding;
+	int Bandwidth;
+	int SpreadingFactor;
+	int LowDataRateOptimize;
+	
+	// LoRa settings for various modes.  We support modes 2 (repeater mode), 1 (normally used for SSDV) and 0 (normal slow telemetry mode).
+	
+#if 0
+	if(Mode==5)			{	ImplicitOrExplicit=EXPLICIT_MODE;	ErrorCoding=ERROR_CODING_4_8;	Bandwidth=BANDWIDTH_41K7;	SpreadingFactor=SPREADING_11;	LowDataRateOptimize=0;		}
+	else if(Mode==2)	{	ImplicitOrExplicit=EXPLICIT_MODE;	ErrorCoding=ERROR_CODING_4_8;	Bandwidth=BANDWIDTH_62K5;	SpreadingFactor=SPREADING_8;	LowDataRateOptimize=0;		}
+	else if(Mode==1)	{	ImplicitOrExplicit=IMPLICIT_MODE;	ErrorCoding=ERROR_CODING_4_5;	Bandwidth=BANDWIDTH_20K8;	SpreadingFactor=SPREADING_6;	LowDataRateOptimize=0;		}
+	else				{	ImplicitOrExplicit=EXPLICIT_MODE;	ErrorCoding=ERROR_CODING_4_8;	Bandwidth=BANDWIDTH_20K8;	SpreadingFactor=SPREADING_11;	LowDataRateOptimize=0x08;	}
+#else
+	// this transmits 16 bytes of data in 
+//	ImplicitOrExplicit=EXPLICIT_MODE;	ErrorCoding=ERROR_CODING_4_8;	Bandwidth=BANDWIDTH_20K8;	SpreadingFactor=SPREADING_8;	LowDataRateOptimize=0;
+
+	// this transmits 16 bytes of data in 139ms
+	ImplicitOrExplicit=EXPLICIT_MODE;	ErrorCoding=ERROR_CODING_4_8;	Bandwidth=BANDWIDTH_62K5;	SpreadingFactor=SPREADING_7;	LowDataRateOptimize=0;
+#endif
+	
+	writeRegister(REG_MODEM_CONFIG,ImplicitOrExplicit|ErrorCoding|Bandwidth);
+	writeRegister(REG_MODEM_CONFIG2,SpreadingFactor|CRC_ON);
+	writeRegister(REG_MODEM_CONFIG3,0x04|LowDataRateOptimize);	// 0x04: AGC sets LNA gain
+	
+	// writeRegister(REG_DETECT_OPT, (SpreadingFactor == SPREADING_6) ? 0x05 : 0x03);					// 0x05 For SF6; 0x03 otherwise
+	writeRegister(REG_DETECT_OPT,(readRegister(REG_DETECT_OPT)&0xF8)|((SpreadingFactor==SPREADING_6)?0x05:0x03));  // 0x05 For SF6; 0x03 otherwise
+	
+	writeRegister(REG_DETECTION_THRESHOLD,(SpreadingFactor==SPREADING_6)?0x0C:0x0A);		// 0x0C for SF6, 0x0A otherwise  
 }
 
 void setFrequency(double Frequency)
@@ -364,7 +366,7 @@ void SendLoRaPacket(unsigned char *buffer,int Length)
 	
 	LastLoRaTX=millis();
 	
-	setupRFM98(LORA_FREQUENCY,LORA_MODE);
+//	setupRFM98(LORA_FREQUENCY,LORA_MODE);
 	
 	Serial.print("Sending "); Serial.print(Length);	Serial.println(" bytes");
 	
@@ -427,14 +429,12 @@ int LORACommandHandler(uint8_t *cmd,uint16_t cmdptr)
 					
 					Serial.println("Long range mode");
 					lora_mode=0;
-					
 					break;
 		
 		case 'h':	// high rate mode
 					
 					Serial.println("High rate mode");
 					lora_mode=2;
-					
 					break;
 		
 		case 'm':	// any mode
@@ -442,6 +442,28 @@ int LORACommandHandler(uint8_t *cmd,uint16_t cmdptr)
 					Serial.print("Setting LoRa Mode to ");
 					Serial.println(cmd[2]-0x30);
 					lora_mode=cmd[2]-0x30;
+					break;
+		
+		case 'c':	// constant transmit
+			
+					lora_constant_transmit=!lora_constant_transmit;
+					
+					Serial.printf("Setting constant transmit mode to %d\r\n",lora_constant_transmit);
+					break;
+		
+		case '+':	// offset up
+			
+					lora_offset+=1.0;
+					
+					Serial.printf("LoRa offset=%.1f\n",lora_offset);
+					break;
+		
+		case '-':	// offset down
+			
+					lora_offset-=1.0;
+					
+					Serial.printf("LoRa offset=%.1f\n",lora_offset);
+					break;
 		
 		default:	// ignore
 					break;
@@ -464,11 +486,23 @@ void PollLoRa(void)
 		Serial.print("Tx burst time=");	Serial.print(TXBurstTime);	Serial.println(" ms");	
 	}
 	
+	if(millis()>next_transmit)
+	{
+		if(		(LoRaTransmit==0)
+			&&	(lora_constant_transmit)	)
+		{
+			memcpy(TXPacket,"$$Hello world!\r\n",16);
+			TxPacketLength=16;
+			LoRaTransmit=1;
+			next_transmit=millis()+1000;
+		}
+	}
+	
 	if(LoRaTransmit)
 	{
 		if(TxPacketLength>0)
 		{
-			setupRFM98(lora_frequency,lora_mode);
+//			setupRFM98(lora_frequency,lora_mode);
 			SendLoRaPacket(TXPacket,TxPacketLength);
 		}
 		
