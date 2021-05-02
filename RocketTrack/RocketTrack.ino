@@ -124,7 +124,7 @@ void setup()
 	if(axp.isChargeing()) 
 		Serial.println("Charging ...");
 	
-//	SetupCrypto();	
+	SetupCrypto();	
 //	SetupPressureSensor();
 	SetupGPS();
 	SetupLoRa();
