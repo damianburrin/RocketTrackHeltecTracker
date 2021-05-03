@@ -421,6 +421,7 @@ int LORACommandHandler(uint8_t *cmd,uint16_t cmdptr)
 					// $$LORA1,108,20:30:39,51.95027,-2.54445,00141,0,0,11*9B74
 					
 					memcpy(TXPacket,"$$Hello world!\r\n",16);
+					EncryptPacket(TXPacket);
 					TxPacketLength=16;
 					LoRaTransmit=1;
 					break;
@@ -492,6 +493,7 @@ void PollLoRa(void)
 			&&	(lora_constant_transmit)	)
 		{
 			memcpy(TXPacket,"$$Hello world!\r\n",16);
+			EncryptPacket(TXPacket);
 			TxPacketLength=16;
 			LoRaTransmit=1;
 			next_transmit=millis()+1000;

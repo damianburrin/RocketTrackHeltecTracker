@@ -35,10 +35,19 @@ void SetupCrypto(void)
 
 void EncryptPacket(uint8_t *packet)
 {
-	uint8_t pt;
+	uint8_t pt[16];
 	memcpy(pt,packet,16);
 	crypto_feed_watchdog();
 	cipher->setKey(crypto_key,cipher->keySize());
 	cipher->encryptBlock(packet,pt);
+}
+
+void DecryptPacket(uint8_t *packet)
+{
+	uint8_t ct[16];
+	memcpy(ct,packet,16);
+	crypto_feed_watchdog();
+	cipher->setKey(crypto_key,cipher->keySize());
+	cipher->decryptBlock(packet,ct);
 }
 
