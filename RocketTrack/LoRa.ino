@@ -133,10 +133,10 @@ uint32_t TXStartTimeMillis;
 
 double lora_frequency=LORA_FREQUENCY;
 double lora_offset=LORA_OFFSET;
-uint8_t lora_mode=LORA_MODE;
+uint8_t lora_mode=0;
 
 bool lora_constant_transmit=false;
-int next_transmit=0;
+uint32_t next_transmit=0;
 
 tLoRaMode LoRaMode;
 byte currentMode=0x81;
@@ -215,20 +215,16 @@ void setLoraOperatingMode(int Mode)
 	int SpreadingFactor;
 	int LowDataRateOptimize;
 	
-	// LoRa settings for various modes.  We support modes 2 (repeater mode), 1 (normally used for SSDV) and 0 (normal slow telemetry mode).
-	
-#if 0
-	if(Mode==5)			{	ImplicitOrExplicit=EXPLICIT_MODE;	ErrorCoding=ERROR_CODING_4_8;	Bandwidth=BANDWIDTH_41K7;	SpreadingFactor=SPREADING_11;	LowDataRateOptimize=0;		}
-	else if(Mode==2)	{	ImplicitOrExplicit=EXPLICIT_MODE;	ErrorCoding=ERROR_CODING_4_8;	Bandwidth=BANDWIDTH_62K5;	SpreadingFactor=SPREADING_8;	LowDataRateOptimize=0;		}
-	else if(Mode==1)	{	ImplicitOrExplicit=IMPLICIT_MODE;	ErrorCoding=ERROR_CODING_4_5;	Bandwidth=BANDWIDTH_20K8;	SpreadingFactor=SPREADING_6;	LowDataRateOptimize=0;		}
-	else				{	ImplicitOrExplicit=EXPLICIT_MODE;	ErrorCoding=ERROR_CODING_4_8;	Bandwidth=BANDWIDTH_20K8;	SpreadingFactor=SPREADING_11;	LowDataRateOptimize=0x08;	}
-#else
-	// this transmits 16 bytes of data in 
-//	ImplicitOrExplicit=EXPLICIT_MODE;	ErrorCoding=ERROR_CODING_4_8;	Bandwidth=BANDWIDTH_20K8;	SpreadingFactor=SPREADING_8;	LowDataRateOptimize=0;
-
-	// this transmits 16 bytes of data in 139ms
-	ImplicitOrExplicit=EXPLICIT_MODE;	ErrorCoding=ERROR_CODING_4_8;	Bandwidth=BANDWIDTH_62K5;	SpreadingFactor=SPREADING_7;	LowDataRateOptimize=0;
-#endif
+	if(lora_mode==0)
+	{
+		// this transmits 16 bytes of data in 5135ms
+		ImplicitOrExplicit=EXPLICIT_MODE;	ErrorCoding=ERROR_CODING_4_8;	Bandwidth=BANDWIDTH_20K8;	SpreadingFactor=SPREADING_11;	LowDataRateOptimize=0x08;
+	}
+	else
+	{
+		// this transmits 16 bytes of data in 139ms
+		ImplicitOrExplicit=EXPLICIT_MODE;	ErrorCoding=ERROR_CODING_4_8;	Bandwidth=BANDWIDTH_62K5;	SpreadingFactor=SPREADING_7;	LowDataRateOptimize=0;
+	}
 	
 	writeRegister(REG_MODEM_CONFIG,ImplicitOrExplicit|ErrorCoding|Bandwidth);
 	writeRegister(REG_MODEM_CONFIG2,SpreadingFactor|CRC_ON);
@@ -284,20 +280,24 @@ void setMode(byte newMode)
 										writeRegister(REG_PA_CONFIG,PA_MAX_UK);
 										writeRegister(REG_OPMODE,newMode);
 										TXStartTimeMillis=millis();
+										ControlLED(AXP20X_LED_BLINK_4HZ);
 										currentMode=newMode; 
 										break;
 		
 		case RF98_MODE_RX_CONTINUOUS:	writeRegister(REG_PA_CONFIG,PA_OFF_BOOST);	// TURN PA OFF FOR RECEIVE??
 										writeRegister(REG_LNA,LNA_MAX_GAIN);  		// MAX GAIN FOR RECEIVE
 										writeRegister(REG_OPMODE,newMode);
+										ControlLED(AXP20X_LED_BLINK_1HZ);
 										currentMode=newMode;	 
 										break;
 		
 		case RF98_MODE_SLEEP:			writeRegister(REG_OPMODE,newMode);
+										ControlLED(AXP20X_LED_OFF);
 										currentMode=newMode; 
 										break;
 		
 		case RF98_MODE_STANDBY:			writeRegister(REG_OPMODE,newMode);
+										ControlLED(AXP20X_LED_OFF);
 										currentMode=newMode; 
 										break;
 		
@@ -351,6 +351,8 @@ int LoRaIsFree(void)
 			// Clear that IRQ flag
 			writeRegister(REG_IRQ_FLAGS,0x08); 
 			LoRaMode=lmIdle;
+			
+			ControlLED(AXP20X_LED_OFF);
 			
 			uint32_t TXBurstTime=millis()-TXStartTimeMillis;
 			Serial.print("Tx burst time=");	Serial.print(TXBurstTime);	Serial.println(" ms");
@@ -435,14 +437,7 @@ int LORACommandHandler(uint8_t *cmd,uint16_t cmdptr)
 		case 'h':	// high rate mode
 					
 					Serial.println("High rate mode");
-					lora_mode=2;
-					break;
-		
-		case 'm':	// any mode
-					
-					Serial.print("Setting LoRa Mode to ");
-					Serial.println(cmd[2]-0x30);
-					lora_mode=cmd[2]-0x30;
+					lora_mode=1;
 					break;
 		
 		case 'c':	// constant transmit
@@ -483,6 +478,8 @@ void PollLoRa(void)
 		writeRegister(REG_IRQ_FLAGS,0x08); 
 		LoRaMode=lmIdle;
 		
+		ControlLED(AXP20X_LED_OFF);
+		
 		uint32_t TXBurstTime=millis()-TXStartTimeMillis;
 		Serial.print("Tx burst time=");	Serial.print(TXBurstTime);	Serial.println(" ms");	
 	}
@@ -496,7 +493,11 @@ void PollLoRa(void)
 			EncryptPacket(TXPacket);
 			TxPacketLength=16;
 			LoRaTransmit=1;
-			next_transmit=millis()+1000;
+			
+			if(lora_mode==0)
+				next_transmit=millis()+15000;
+			else
+				next_transmit=millis()+1000;
 		}
 	}
 	

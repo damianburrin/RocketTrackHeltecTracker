@@ -10,6 +10,7 @@ uint32_t NextLEDs=0;
 void SetupLEDs(void)
 {
 	ControlLED(AXP20X_LED_LOW_LEVEL);
+	ControlLED(AXP20X_LED_OFF);
 }
 
 void ControlLED(axp_chgled_mode_t Mode)
@@ -24,7 +25,7 @@ void ControlLED(axp_chgled_mode_t Mode)
 	}
 }
 
-void CheckLEDs(void)
+void PollLEDs(void)
 {
 	if(millis()>=NextLEDs)
 	{
