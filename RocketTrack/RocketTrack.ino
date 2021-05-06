@@ -41,6 +41,8 @@ s|                                                                              
 #define MISO				19		// GPIO19 -- SX1278's MISO
 #define MOSI				27		// GPIO27 -- SX1278's MOSI
 
+#define USER_BUTTON			38
+
 //------------------------------------------------------------------------------------------------------
 
 AXP20X_Class axp;
@@ -124,11 +126,12 @@ void setup()
 	if(axp.isChargeing()) 
 		Serial.println("Charging ...");
 	
+	SetupPMIC();
+//	SetupPressureSensor();
 	SetupCrypto();
 	SetupLEDs();
-//	SetupPressureSensor();
-	SetupGPS();
 	SetupLoRa();
+	SetupGPS();
 }
 
 void loop()
@@ -151,6 +154,7 @@ void loop()
 	}
 #endif
 #else
+	PollPMIC();
 //	PollPressureSensor();
 	PollGPS();
 	PollLoRa();

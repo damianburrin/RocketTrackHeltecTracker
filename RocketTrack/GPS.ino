@@ -48,6 +48,8 @@ int32_t hMSL=0;
 uint32_t hAcc=0;
 uint32_t vAcc=0;
 
+uint8_t hAccValue=0;
+
 void CalculateChecksum(uint8_t *buffer,uint16_t bufferptr,uint8_t *CK_A,uint8_t *CK_B)
 {
 	uint16_t cnt;
@@ -222,7 +224,7 @@ void SetupGPS(void)
 	
 	Serial1.begin(9600,SERIAL_8N1,34,12);	// Pins for T-Beam v0.8 (3 push buttons) and up
 	
-	delay(1000);
+	delay(500);
 	
 	Set5Hz_Fix_Rate();
 	
@@ -254,14 +256,26 @@ void SetupGPS(void)
 	SetMessageRate(0xf0,0x04,0x00);	// GPRMC
 	SetMessageRate(0xf0,0x05,0x00);	// GPVTG
 #endif	
+	
+#if 0
+	SetMessageRate(0x01,0x02,0x01);	// NAV-POSLLH every fix
+	SetMessageRate(0x01,0x03,0x01);	// NAV-STATUS every fix
+	SetMessageRate(0x01,0x30,0x01);	// NAV-SVINFO every fix
+#endif	
 #if 1
 	// turn on the useful UBX messages
 	
 	SetMessageRate(0x01,0x02,0x01);	// NAV-POSLLH every fix
+#if 1
 	SetMessageRate(0x01,0x03,0x05);	// NAV-STATUS every 5th fix
 	SetMessageRate(0x01,0x30,0x05);	// NAV-SVINFO every 5th fix
-	
+#else
+	SetMessageRate(0x01,0x03,0x01);	// NAV-STATUS every fix
+	SetMessageRate(0x01,0x30,0x01);	// NAV-SVINFO every fix
+#endif
+#if 0
 	EnableRawMeasurements();
+#endif
 	
 #if 0
 	SetMessageRate(0x02,0x10,0x05);	// RXM-RAW every 5th fix
@@ -296,6 +310,8 @@ void PollGPS(void)
 		
 		if((lastbyte==0xb5)&&(rxbyte==0x62))
 		{
+			ProcessUBX(buffer,bufferptr);
+			
 			// this is the start of a ubx message so we have a full one stored, process it
 			buffer[0]=lastbyte;
 			buffer[1]=rxbyte;
@@ -307,29 +323,26 @@ void PollGPS(void)
 			
 			if(bufferptr<sizeof(buffer))
 			{
-				static uint16_t msglength=0;
+// 				static uint16_t msglength=0;
 				
 				buffer[bufferptr++]=rxbyte;
 				
-				if((msglength==0)&&(bufferptr>=6))
-				{
-					msglength=*((uint16_t *)(buffer+4));
-				}
+// 				if((msglength==0)&&(bufferptr>=6))
+// 				{
+// 					msglength=*((uint16_t *)(buffer+4));
+// 				}
 				
-				if(bufferptr==(8+msglength))
-				{
-#if (DEBUG>2)
-					int cnt;
-					for(cnt=0;cnt<8+msglength;cnt++)
-						Serial.printf("%02x ",buffer[cnt]);
-					
-					Serial.println("");
-#endif
-					
-					ProcessUBX(buffer,bufferptr);
-					msglength=0;
-					bufferptr=0;
-				}
+// 				if(bufferptr==(8+msglength))
+// 				{
+// #if (DEBUG>2)
+// 					int cnt;
+// 					for(cnt=0;cnt<8+msglength;cnt++)
+// 						Serial.printf("%02x ",buffer[cnt]);
+// 					
+// 					Serial.println("");
+// #endif
+// 					
+// 				}
 			}
 			else
 			{
@@ -376,6 +389,12 @@ void UnpackNAVPOSLLH(uint8_t *buffer)
 	hAcc=*((uint32_t *)(buffer+26));
 	vAcc=*((uint32_t *)(buffer+30));
 	
+	if((hAcc/500)>255)	hAccValue=255;
+	else				hAccValue=(uint8_t)(hAcc/500);
+	
+#if 0
+	Serial.printf("\t\thAcc = %ld mm\n",hAcc);
+#endif
 #if (DEBUG>2)
 	Serial.printf("\t\tLat = %.6f, Lon = %.6f, ",lat/1e7,lon/1e7,height/1e3);
 	Serial.printf("height = %.1f\n",height/1e3);

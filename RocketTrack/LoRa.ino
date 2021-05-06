@@ -165,6 +165,16 @@ uint32_t LastLoRaTX=0;
 void SetupLoRa(void)
 {
 	setupRFM98(LORA_FREQUENCY,LORA_MODE);
+	
+	pinMode(USER_BUTTON,INPUT);
+	
+	delay(100);
+	
+	if(digitalRead(USER_BUTTON))
+	{
+		Serial.println("Using permanent GPS transmit mode ...");
+		lora_constant_transmit=true;
+	}
 }
 
 void setupRFM98(double Frequency,int Mode)
@@ -428,6 +438,17 @@ int LORACommandHandler(uint8_t *cmd,uint16_t cmdptr)
 					LoRaTransmit=1;
 					break;
 		
+		case 'g':	// transmit a packet of gps data
+					
+					Serial.println("Transmitting GPS LoRa packet");
+					
+					// $$LORA1,108,20:30:39,51.95027,-2.54445,00141,0,0,11*9B74
+					
+					PackPacket();
+					EncryptPacket(TXPacket);
+					LoRaTransmit=1;
+					break;
+		
 		case 'l':	// long range mode
 					
 					Serial.println("Long range mode");
@@ -489,9 +510,15 @@ void PollLoRa(void)
 		if(		(LoRaTransmit==0)
 			&&	(lora_constant_transmit)	)
 		{
+#if 0
 			memcpy(TXPacket,"$$Hello world!\r\n",16);
 			EncryptPacket(TXPacket);
 			TxPacketLength=16;
+#else
+			PackPacket();
+			EncryptPacket(TXPacket);
+#endif
+			
 			LoRaTransmit=1;
 			
 			if(lora_mode==0)
