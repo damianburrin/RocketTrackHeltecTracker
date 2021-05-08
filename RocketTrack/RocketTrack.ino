@@ -36,10 +36,13 @@ s|                                                                              
 
 #define LORA_NSS			18		// Comment out to disable LoRa code
 #define LORA_RESET			14		// Comment out if not connected
-#define LORA_DIO0			26                
+#define LORA_DIO0			26
+
 #define SCK					5		// GPIO5  -- SX1278's SCK
 #define MISO				19		// GPIO19 -- SX1278's MISO
 #define MOSI				27		// GPIO27 -- SX1278's MOSI
+
+#define SDCARD_NSS			4		// GPIO4 for select line to SD Card socket
 
 #define USER_BUTTON			38
 

@@ -81,8 +81,8 @@ void setupRFM98(double Frequency,int Mode)
 	pinMode(LORA_NSS,OUTPUT);
 	pinMode(LORA_DIO0,INPUT);
 
-	// SPI.begin();
-	SPI.begin(SCK,MISO,MOSI,LORA_NSS);
+//	SPI.begin(SCK,MISO,MOSI,LORA_NSS);
+	SPI.begin(SCK,MISO,MOSI);
 	
 	// LoRa mode 
 	setLoRaMode();
@@ -207,10 +207,10 @@ void setMode(byte newMode)
 
 byte readRegister(byte addr)
 {
-	select();
+	LoRa_select();
 	SPI.transfer(addr&0x7F);
 	byte regval=SPI.transfer(0);
-	unselect();
+	LoRa_unselect();
 	
 	printf("RD Reg %02X=%02X\n",addr,regval);
 	return regval;
@@ -218,20 +218,20 @@ byte readRegister(byte addr)
 
 void writeRegister(byte addr,byte value)
 {
-	select();
+	LoRa_select();
 	SPI.transfer(addr|0x80); // OR address with 10000000 to indicate write enable;
 	SPI.transfer(value);
-	unselect();
+	LoRa_unselect();
 	
 	printf("WR Reg %02X=%02X\n",addr,value);
 }
 
-void select() 
+void LoRa_select() 
 {
 	digitalWrite(LORA_NSS,LOW);
 }
 
-void unselect() 
+void LoRa_unselect() 
 {
 	digitalWrite(LORA_NSS,HIGH);
 }
@@ -282,7 +282,7 @@ void SendLoRaPacket(unsigned char *buffer,int Length)
 		writeRegister(REG_PAYLOAD_LENGTH,Length);
 	}
 	
-	select();
+	LoRa_select();
 	
 	// tell SPI which address you want to write to
 	SPI.transfer(REG_FIFO|0x80);
@@ -294,7 +294,7 @@ void SendLoRaPacket(unsigned char *buffer,int Length)
 		SPI.transfer(buffer[i]);
 	}
 	
-	unselect();
+	LoRa_unselect();
 	
 	// go into transmit mode
 	setMode(RF98_MODE_TX);
