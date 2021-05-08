@@ -4,7 +4,7 @@ void SetupPressureSensor(void)
 
 }
 
-void CheckPressureSensor(void)
+void PollPressureSensor(void)
 {
 	
 }

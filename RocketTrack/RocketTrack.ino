@@ -99,35 +99,12 @@ void setup()
 	// Serial port(s)
 	
 	Serial.begin(115200);
-	Serial.println("");
-	Serial.print("RocketTrack Flight Telemetry System");		
-	Serial.println("");
+	Serial.print("\nRocketTrack Flight Telemetry System\n\n");
 	
 	Wire.begin(21,22);
 	
-	Serial.print("AXP192 Init");
-	if(!axp.begin(Wire, AXP192_SLAVE_ADDRESS))	{	Serial.println(" PASS");	} 
-	else                                        {	Serial.println(" FAIL");	}
-	
-	axp.setPowerOutPut(AXP192_LDO2, AXP202_ON);
-	axp.setPowerOutPut(AXP192_LDO3, AXP202_ON);
-	axp.setPowerOutPut(AXP192_DCDC2, AXP202_ON);
-	axp.setPowerOutPut(AXP192_EXTEN, AXP202_ON);
-	axp.setPowerOutPut(AXP192_DCDC1, AXP202_ON);
-	axp.setDCDC1Voltage(3300);
-	
-	Serial.printf("\tDCDC1 2v5: %s\n",axp.isDCDC1Enable()?"ENABLE":"DISABLE");
-	Serial.printf("\tDCDC2 Not Used: %s\n",axp.isDCDC2Enable()?"ENABLE":"DISABLE");
-	Serial.printf("\tLDO2 LoRa: %s\n",axp.isLDO2Enable()?"ENABLE":"DISABLE");
-	Serial.printf("\tLDO3 GPS: %s\n",axp.isLDO3Enable()?"ENABLE":"DISABLE");
-	Serial.printf("\tDCDC3 3v3: %s\n",axp.isDCDC3Enable()?"ENABLE":"DISABLE");
-	Serial.printf("\tExten: %s\n",axp.isExtenEnable()?"ENABLE":"DISABLE");
-
-	if(axp.isChargeing()) 
-		Serial.println("Charging ...");
-	
 	SetupPMIC();
-//	SetupPressureSensor();
+	SetupPressureSensor();
 	SetupCrypto();
 	SetupLEDs();
 	SetupLoRa();
@@ -137,25 +114,15 @@ void setup()
 void loop()
 {
 #if 0
-	uint8_t ch;
-
 #if 1
-	while(Serial.available())
-	{
-		ch=Serial.read();
-		Serial1.write(ch);
-	}
+	while(Serial.available())	{	uint8_t ch=Serial.read();	Serial1.write(ch);	}
 #endif
 #if 1
-	if(Serial1.available())
-	{
-		ch=Serial1.read();
-		Serial.write(ch);
-	}
+	if(Serial1.available())		{	uint8_t ch=Serial1.read();	Serial.write(ch);	}
 #endif
 #else
 	PollPMIC();
-//	PollPressureSensor();
+	PollPressureSensor();
 	PollGPS();
 	PollLoRa();
 //	PollLEDs();
