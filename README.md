@@ -11,13 +11,17 @@ This is a fork of Dave Akerman's FlexTrack customised for use on a high power ro
 
 - Uses binary mode uBlox protocol from the GPS receiver to simplify onboard processing
 
-- Is configured from a simple web interface served over WiFi
+- Runs the GPS receiver at 5Hz fix rate with 1Hz satellite visibility data in the logged stream
+
+- May log raw pseudo-range and carrier phase data from the GPS receiver for later processing using RTKLib to refine the track through the sky
+
+- Will be configured from a simple web interface served over WiFi
 
 - Stores configuration in a file stored on the SD Card
 
 - Optionally uses strong encryption
 
-- Stores high rate gyro, accelerometer and magnetometer data to the SD card logs
+- Stores high rate gyro, accelerometer and magnetometer data, if available, to the SD card logs
 
 - Can use a barometric altimeter, BMP180 or BME280 initially, and store and transmit this data
 
@@ -28,37 +32,6 @@ This is a fork of Dave Akerman's FlexTrack customised for use on a high power ro
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#### Legacy below here
-
-
-
-## FlexTrack 
-
-Flexible Arduino-based tracker software for RTTY, LoRa and APRS.
-
-This fork is configured for Habduino V4.X boards. 
-
-This code provides simultaneous (where legal and supported by the hardware installed) transmission of radio telemetry via RTTY and APRS on Habduino Arduino addon boards for High Altitude Ballooning.
 
 ## Libraries
 
@@ -74,18 +47,7 @@ Libraries can be added via the Ardunio IDE menu:  Sketch -> Include Library -> A
 
 ## Disclaimer
 
-The FlexTrack code is provided as is with no guarantees of performance or operation. 
-
-If you decide to use this code under a balloon it’s your responsibility to ensure you comply with the local legislation and laws regarding meteorological balloon launching and radio transmission in the air. 
-The Radiometrix NTX2B 434Mhz is NOT license exempt in the United States of America and does need a radio amateur license.
-
-Use of APRS requires a radio amateur license in all countries and a number of countries don’t permit the airborne use of APRS under any circumstances. 
-
-It is YOUR responsibility to ensure Habduino hardware and code is used safely and legally please review the safety section on the website. 
-
-## Further Reading on High Altitude Ballooning
-
-Please read this http://www.daveakerman.com/?p=1732
+The RocketTrack code is provided as is with no guarantees of performance or operation. 
 
 ## License
 
