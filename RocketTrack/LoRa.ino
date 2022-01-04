@@ -18,7 +18,7 @@
 |                                                     |
 \*---------------------------------------------------*/
 
-#include <SPI.h>
+//#include <SPI.h>
 #include <string.h>
 
 #include "LoRa.h"
@@ -35,7 +35,6 @@ double lora_offset=LORA_OFFSET;
 uint8_t lora_mode=0;
 
 bool lora_constant_transmit=false;
-uint32_t next_transmit=0;
 
 tLoRaMode LoRaMode;
 byte currentMode=0x81;
@@ -48,7 +47,7 @@ uint16_t TXPacketCounter=0;
 
 uint32_t LastLoRaTX=0;
 
-void SetupLoRa(void)
+int SetupLoRa(void)
 {
 	setupRFM98(LORA_FREQUENCY,LORA_MODE);
 	
@@ -61,6 +60,8 @@ void SetupLoRa(void)
 		Serial.println("Using permanent GPS transmit mode ...");
 		lora_constant_transmit=true;
 	}
+	
+	return(0);
 }
 
 void setupRFM98(double Frequency,int Mode)
@@ -74,14 +75,14 @@ void setupRFM98(double Frequency,int Mode)
 	digitalWrite(LORA_RESET,LOW);
 	delay(10);
 	digitalWrite(LORA_RESET,HIGH);
-	delay(1000);          // Module needs this before it's ready on these boards (slow power up ?)
+//	delay(1000);          // Module needs this before it's ready on these boards (slow power up ?)
+	delay(100);
 	Serial.println("Reset LoRa Module");
 #endif
 	
 	pinMode(LORA_NSS,OUTPUT);
 	pinMode(LORA_DIO0,INPUT);
 
-//	SPI.begin(SCK,MISO,MOSI,LORA_NSS);
 	SPI.begin(SCK,MISO,MOSI);
 	
 	// LoRa mode 
@@ -90,7 +91,7 @@ void setupRFM98(double Frequency,int Mode)
 	// Frequency
 	setFrequency(Frequency+lora_offset/1000.0);
 	
-	setLoraOperatingMode(LORA_MODE);
+	setLoraOperatingMode(Mode);
 	
 	writeRegister(REG_PAYLOAD_LENGTH,PayloadLength);
 	
@@ -142,8 +143,9 @@ void setFrequency(double Frequency)
 	Frequency=Frequency*7110656/434;
 	FrequencyValue=(unsigned long)(Frequency);
 	
-	Serial.print("FrequencyValue is ");
-	Serial.println(FrequencyValue);
+#if (DEBUG>1)
+	Serial.printf("FrequencyValue is %d\r\n",FrequencyValue);
+#endif
 	
 	// Set frequency
 	writeRegister(0x06,(FrequencyValue>>16)&0xFF);
@@ -159,16 +161,14 @@ void setLoRaMode()
 	writeRegister(REG_OPMODE,0x80);
 }
 
-/////////////////////////////////////
-//    Method:   Change the mode
-//////////////////////////////////////
-
 void setMode(byte newMode)
 {
 	if(newMode==currentMode)
 		return;  
 	
+#if (DEBUG>1)
 	Serial.printf("Set LoRa Mode %d\n",newMode);
+#endif
 	
 	switch(newMode) 
 	{
@@ -176,24 +176,24 @@ void setMode(byte newMode)
 										writeRegister(REG_PA_CONFIG,PA_MAX_UK);
 										writeRegister(REG_OPMODE,newMode);
 										TXStartTimeMillis=millis();
-										ControlLED(AXP20X_LED_BLINK_4HZ);
+//										ControlLED(AXP20X_LED_BLINK_4HZ);
 										currentMode=newMode; 
 										break;
 		
 		case RF98_MODE_RX_CONTINUOUS:	writeRegister(REG_PA_CONFIG,PA_OFF_BOOST);	// TURN PA OFF FOR RECEIVE??
 										writeRegister(REG_LNA,LNA_MAX_GAIN);  		// MAX GAIN FOR RECEIVE
 										writeRegister(REG_OPMODE,newMode);
-										ControlLED(AXP20X_LED_BLINK_1HZ);
+//										ControlLED(AXP20X_LED_BLINK_1HZ);
 										currentMode=newMode;	 
 										break;
 		
 		case RF98_MODE_SLEEP:			writeRegister(REG_OPMODE,newMode);
-										ControlLED(AXP20X_LED_OFF);
+//										ControlLED(AXP20X_LED_OFF);
 										currentMode=newMode; 
 										break;
 		
 		case RF98_MODE_STANDBY:			writeRegister(REG_OPMODE,newMode);
-										ControlLED(AXP20X_LED_OFF);
+//										ControlLED(AXP20X_LED_OFF);
 										currentMode=newMode; 
 										break;
 		
@@ -212,7 +212,10 @@ byte readRegister(byte addr)
 	byte regval=SPI.transfer(0);
 	LoRa_unselect();
 	
-	printf("RD Reg %02X=%02X\n",addr,regval);
+#if (DEBUG>2)
+	Serial.printf("RD Reg %02X=%02X\n",addr,regval);
+#endif
+	
 	return regval;
 }
 
@@ -222,8 +225,10 @@ void writeRegister(byte addr,byte value)
 	SPI.transfer(addr|0x80); // OR address with 10000000 to indicate write enable;
 	SPI.transfer(value);
 	LoRa_unselect();
-	
-	printf("WR Reg %02X=%02X\n",addr,value);
+
+#if (DEBUG>2)
+	Serial.printf("WR Reg %02X=%02X\n",addr,value);
+#endif
 }
 
 void LoRa_select() 
@@ -236,6 +241,7 @@ void LoRa_unselect()
 	digitalWrite(LORA_NSS,HIGH);
 }
 
+/*
 int LoRaIsFree(void)
 {
 	if(		(LoRaMode!=lmSending)
@@ -257,6 +263,7 @@ int LoRaIsFree(void)
 	
 	return 0;
 }
+*/
 
 void SendLoRaPacket(unsigned char *buffer,int Length)
 {
@@ -284,13 +291,13 @@ void SendLoRaPacket(unsigned char *buffer,int Length)
 	
 	LoRa_select();
 	
-	// tell SPI which address you want to write to
 	SPI.transfer(REG_FIFO|0x80);
 
-	// loop over the payload and put it on the buffer 
 	for(i=0;i<Length;i++)
 	{
-		printf("WR Reg %02X=%02X\n",REG_FIFO|0x80,buffer[i]);
+#if (DEBUG>2)
+		Serial.printf("WR Reg %02X=%02X\n",REG_FIFO|0x80,buffer[i]);
+#endif
 		SPI.transfer(buffer[i]);
 	}
 	
@@ -312,62 +319,55 @@ int LORACommandHandler(uint8_t *cmd,uint16_t cmdptr)
 	
 	switch(cmd[1]|0x20)
 	{
-		case 't':	// transmit a burst
-					
-					Serial.println("Transmitting LoRa packet");
-					
-					// $$LORA1,108,20:30:39,51.95027,-2.54445,00141,0,0,11*9B74
-					
+		case 't':	Serial.println("Transmitting LoRa packet");
 					memcpy(TXPacket,"$$Hello world!\r\n",16);
 					EncryptPacket(TXPacket);
 					TxPacketLength=16;
 					LoRaTransmit=1;
 					break;
 		
-		case 'g':	// transmit a packet of gps data
-					
-					Serial.println("Transmitting GPS LoRa packet");
-					
-					// $$LORA1,108,20:30:39,51.95027,-2.54445,00141,0,0,11*9B74
-					
+		case 'g':	Serial.println("Transmitting GPS LoRa packet");
 					PackPacket();
 					EncryptPacket(TXPacket);
 					LoRaTransmit=1;
 					break;
 		
-		case 'l':	// long range mode
-					
-					Serial.println("Long range mode");
+		case 'l':	Serial.println("Long range mode");
 					lora_mode=0;
 					break;
 		
-		case 'h':	// high rate mode
-					
-					Serial.println("High rate mode");
+		case 'h':	Serial.println("High rate mode");
 					lora_mode=1;
 					break;
 		
-		case 'c':	// constant transmit
-			
-					lora_constant_transmit=!lora_constant_transmit;
+		case 'm':	if(lora_mode==0)	Serial.print("Long range mode\r\n");
+					else				Serial.print("High rate mode\r\n");
+					break;
 					
+		case 'c':	lora_constant_transmit=!lora_constant_transmit;
 					Serial.printf("Setting constant transmit mode to %d\r\n",lora_constant_transmit);
 					break;
 		
-		case '+':	// offset up
-			
-					lora_offset+=1.0;
-					
-					Serial.printf("LoRa offset=%.1f\n",lora_offset);
+		case '+':	lora_offset+=1.0;
+					Serial.printf("LoRa offset = %.1f\n",lora_offset);
 					break;
 		
-		case '-':	// offset down
-			
-					lora_offset-=1.0;
-					
-					Serial.printf("LoRa offset=%.1f\n",lora_offset);
+		case '-':	lora_offset-=1.0;
+					Serial.printf("LoRa offset = %.1f\n",lora_offset);
 					break;
 		
+		case '?':	Serial.print("LoRa Test Harness\r\n================\r\n\n");
+					Serial.print("t\t-\tTransmit a test packet\r\n");
+					Serial.print("g\t-\tTransmit a GPS packet\r\n");
+					Serial.print("h\t-\tSet high rate mode\r\n");
+					Serial.print("l\t-\tSet long range mode\r\n");
+					Serial.print("m\t-\tCheck operating mode\r\n");
+					Serial.print("c\t-\tConstant Transmit on/off\r\n");
+					Serial.print("+\t-\tIncrement LoRa offset\r\n");
+					Serial.print("-\t-\tDecrement LoRa offset\r\n");
+					Serial.print("?\t-\tShow this menu\r\n");
+					break;
+					
 		default:	// ignore
 					break;
 	}
@@ -388,41 +388,20 @@ void PollLoRa(void)
 		ControlLED(AXP20X_LED_OFF);
 		
 		uint32_t TXBurstTime=millis()-TXStartTimeMillis;
-		Serial.print("Tx burst time=");	Serial.print(TXBurstTime);	Serial.println(" ms");	
-	}
-	
-	if(millis()>next_transmit)
-	{
-		if(		(LoRaTransmit==0)
-			&&	(lora_constant_transmit)	)
-		{
-#if 0
-			memcpy(TXPacket,"$$Hello world!\r\n",16);
-			EncryptPacket(TXPacket);
-			TxPacketLength=16;
-#else
-			PackPacket();
-			EncryptPacket(TXPacket);
-#endif
-			
-			LoRaTransmit=1;
-			
-			if(lora_mode==0)
-				next_transmit=millis()+15000;
-			else
-				next_transmit=millis()+1000;
-		}
+		Serial.printf("Tx burst time = %d ms\r\n",TXBurstTime);
 	}
 	
 	if(LoRaTransmit)
 	{
+//		ControlLED(AXP20X_LED_BLINK_4HZ);
+		ControlLED(AXP20X_LED_LOW_LEVEL);
+		
 		if(TxPacketLength>0)
 		{
-//			setupRFM98(lora_frequency,lora_mode);
+			setupRFM98(lora_frequency,lora_mode);
 			SendLoRaPacket(TXPacket,TxPacketLength);
 		}
 		
 		LoRaTransmit=0;
 	}
 }
-

@@ -1,7 +1,8 @@
 
 uint8_t batvolt=0x00;
+bool livepmicdata=false;
 
-void SetupPMIC(void)
+int SetupPMIC(void)
 {
 	Serial.print("AXP192 Init");
 	if(!axp.begin(Wire, AXP192_SLAVE_ADDRESS))	{	Serial.println(" PASS");	} 
@@ -25,6 +26,8 @@ void SetupPMIC(void)
 	else						{	Serial.println("Charging is disabled");	}
 	
 	axp.adc1Enable(AXP202_BATT_CUR_ADC1,true);
+	
+	return(0);
 }
 
 void PollPMIC(void)
@@ -34,16 +37,60 @@ void PollPMIC(void)
 	if(millis()>updateat)
 	{
 		float batteryvoltage=axp.getBattVoltage();
-		Serial.printf("Battery voltage = %.3f",batteryvoltage);
-		
 		float batterycurrent=axp.getBattChargeCurrent();
 		
 		// scale so 4250mV or fully charge gives a value of 212
 		batvolt=(uint8_t)(batteryvoltage/20);
 		
-		if(axp.isChargeing())	{	Serial.printf(", charging at %.1f mA ...\n",batterycurrent);	}
-		else					{	Serial.print("\n");												}
+		if(livepmicdata)
+		{
+			Serial.printf("Battery voltage = %.1f mV",batteryvoltage);
+			if(axp.isChargeing())	{	Serial.printf(", charging at %.1f mA ...\r\n",batterycurrent);	}
+			else					{	Serial.print("\r\n");												}
+		}
 		
 		updateat=millis()+1000L;
 	}
 }
+
+int PMICCommandHandler(uint8_t *cmd,uint16_t cmdptr)
+{
+#if (DEBUG>0)
+	Serial.println((char *)cmd);
+#endif
+	
+	int retval=1;
+	float batteryvoltage=axp.getBattVoltage();
+	float batterychargecurrent=axp.getBattChargeCurrent();
+	
+	switch(cmd[1]|0x20)
+	{
+		case 'l':	livepmicdata=!livepmicdata;
+					if(livepmicdata)	Serial.print("Live PMIC data on\r\n");
+					else				Serial.print("Live PMIC data disabled\r\n");
+					break;
+					
+		case 'c':	if(axp.isChargeing())	Serial.print("PMIC is charging\r\n");
+					else					Serial.print("PMIC is not charging\r\n");
+					break;
+		
+		case 'v':	Serial.printf("Battery voltage = %.1f mV\r\n",batteryvoltage);
+					break;
+		
+		case 'i':	Serial.printf("Battery charge current = %.1f mA\r\n",batterychargecurrent);
+					break;
+		
+		case '?':	Serial.print("PMIC Test Harness\r\n=================\r\n\n");
+					Serial.print("l\t-\tLive PMIC data on/off\r\n");
+					Serial.print("c\t-\tCheck charging status\r\n");
+					Serial.print("v\t-\tCheck battery voltage\r\n");
+					Serial.print("?\t-\tShow this menu\r\n");
+					break;
+		
+		default:	// ignore
+					break;
+	}
+	
+	return(retval);
+}
+

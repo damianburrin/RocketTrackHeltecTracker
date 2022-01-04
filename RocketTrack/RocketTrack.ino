@@ -1,6 +1,27 @@
 
 #include <axp20x.h>
 
+#include "FS.h"
+#include "SD.h"
+#include "SPI.h"
+
+#include "PressureSensor.h"
+#include "SDCard.h"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /*------------------------------------------------------------------------------------------------------*\
 s|                                                                                                        |
 | New tracker code that can be simply rebuilt for various hardware designs.  e.g. serial or i2c GPS,     |
@@ -24,9 +45,9 @@ s|                                                                              
 // LORA settings
 #define LORA_FREQUENCY	434.650
 #define LORA_OFFSET		0         // Frequency to add in kHz to make Tx frequency accurate
+
 #define LORA_ID			0
 #define LORA_MODE		0
-
 
 //------------------------------------------------------------------------------------------------------
 
@@ -46,91 +67,37 @@ s|                                                                              
 
 #define USER_BUTTON			38
 
-//------------------------------------------------------------------------------------------------------
-
 AXP20X_Class axp;
-
-//------------------------------------------------------------------------------------------------------
-//
-//  Globals
-
-// struct TBinaryPacket
-// {
-// 	uint8_t 	PayloadIDs;
-// 	uint16_t	Counter;
-// 	uint16_t	BiSeconds;
-// 	float		Latitude;
-// 	float		Longitude;
-// 	int32_t  	Altitude;
-// };  //  __attribute__ ((packed));
-// 
-// struct TGPS
-// {
-// 	int Hours, Minutes, Seconds;
-// 	unsigned long SecondsInDay;					// Time in seconds since midnight
-// 	float Longitude, Latitude;
-// 	long Altitude, MinimumAltitude, MaximumAltitude, PreviousAltitude;
-// 	unsigned int Satellites;
-// 	byte FixType;
-// 	byte psm_status;
-// 	float InternalTemperature;
-// 	float BatteryVoltage;
-// 	float ExternalTemperature;
-// 	float Pressure;
-// 	float AscentRate;
-// 	unsigned int BoardCurrent;
-// 	unsigned int errorstatus;
-// 	byte GPSFlightMode;
-// 	TFlightMode FlightMode;
-// 	byte PowerMode;
-// 	int CutdownStatus;
-// 	float PredictedLatitude;
-// 	float PredictedLongitude;
-// 	float CDA;
-// 	int UseHostPosition;
-// 	int TimeTillLanding;
-// 	float PredictedLandingSpeed;
-//  } GPS;
-// 
-int SentenceCounter=0;
-#define SEQUENCE_LENGTH 120
-
-//------------------------------------------------------------------------------------------------------
 
 void setup()
 {
 	// Serial port(s)
-	
 	Serial.begin(115200);
-	Serial.print("\nRocketTrack Flight Telemetry System\n\n");
+	Serial.print("\nRocketTrack Flight Telemetry System\r\n\n");
 	
+	// I2C
 	Wire.begin(21,22);
 	
-	SetupPMIC();
-	SetupPressureSensor();
-	SetupCrypto();
-	SetupLEDs();
-	SetupLoRa();
-	SetupGPS();
+	if(SetupPMIC())				{	Serial.print("PMIC Setup failed, halting ...\r\n");					while(1);				}
+	if(SetupScheduler())		{	Serial.print("Scheduler Setup failed, halting ...\r\n");			while(1);				}
+	if(SetupCrypto())			{	Serial.print("Crypto Setup failed, halting ...\r\n");				while(1);				}
+	if(SetupLEDs())				{	Serial.print("LED Setup failed, halting ...\r\n");					while(1);				}
+	if(SetupLoRa())				{	Serial.print("LoRa Setup failed, halting ...\r\n");					while(1);				}
+	if(SetupGPS())				{	Serial.print("GPS Setup failed, halting ...\r\n");					while(1);				}
+	
+	if(SetupSDCard())			{	Serial.print("SD Card Setup failed, disabling ...\r\n");			sdcard_enable=false;	}
+	if(SetupPressureSensor())	{	Serial.print("Pressure Sensor Setup failed, disabling ...\r\n");	psensor_enable=false;	}
 }
 
 void loop()
 {
-#if 0
-#if 1
-	while(Serial.available())	{	uint8_t ch=Serial.read();	Serial1.write(ch);	}
-#endif
-#if 1
-	if(Serial1.available())		{	uint8_t ch=Serial1.read();	Serial.write(ch);	}
-#endif
-#else
 	PollPMIC();
+	PollScheduler();
 	PollPressureSensor();
 	PollGPS();
 	PollLoRa();
-//	PollLEDs();
+	PollLEDs();
 	PollSerial();
-#endif
 }
 
 void PollSerial(void)
@@ -175,6 +142,22 @@ void ProcessCommand(uint8_t *cmd,uint16_t cmdptr)
 					OK=LORACommandHandler(cmd,cmdptr);
 					break;
 		
+		case 'p':	
+					OK=PMICCommandHandler(cmd,cmdptr);
+					break;
+		
+		case '?':	Serial.print("Test Harness Menu\r\n=================\r\n\n");
+					Serial.print("g\t-\tGPS Commands\r\n");
+					Serial.print("l\t-\tLoRa Commands\r\n");
+					Serial.print("p\t-\tPMIC Commands\r\n");
+					Serial.print("h\t-\tHigh Rate Mode Commands\r\n");
+					Serial.print("l\t-\tLong Range Mode Commands\r\n");
+					Serial.print("t\t-\tTransmitter Mode\r\n");
+					Serial.print("r\t-\tReceiver Mode\r\n");
+					Serial.print("?\t-\tShow this menu\r\n");
+					OK=1;
+					break;
+					
 		default:	// do nothing
 					break;
 	}
@@ -183,9 +166,3 @@ void ProcessCommand(uint8_t *cmd,uint16_t cmdptr)
 	else	{	Serial.println("?");	}
 }
 
-int ProcessFieldCommand(char *cmd)
-{
-	int OK=0;
-
-	return OK;
-}

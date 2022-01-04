@@ -205,7 +205,7 @@ void Set5Hz_Fix_Rate()
 	SendUBX(cmd,sizeof(cmd));
 }
 
-void SetupGPS(void)
+int SetupGPS(void)
 {
 #if 0
 	// Switch GPS on,if we have control of that
@@ -226,15 +226,17 @@ void SetupGPS(void)
 	
 	delay(500);
 	
-	Set5Hz_Fix_Rate();
-	
-#if 0
-	ChangeBaudRate(38400);
+#if 1
+	ChangeBaudRate(115200);
 	
 	Serial1.flush();
 	Serial1.end();
 	
-	Serial1.begin(38400,SERIAL_8N1,34,12);	// Pins for T-Beam v0.8 (3 push buttons) and up
+	Serial1.begin(115200,SERIAL_8N1,34,12);	// Pins for T-Beam v0.8 (3 push buttons) and up
+#endif
+	
+#if 0
+	Set5Hz_Fix_Rate();
 #endif
 
 #if 0
@@ -284,10 +286,11 @@ void SetupGPS(void)
 #endif
 #endif
 	
-	
 #else
 	Serial1.begin(9600,SERIAL_8N1,12,15);	// For version 0.7 (2 push buttons) and down
 #endif
+	
+	return(0);
 }
 
 void PollGPS(void)
@@ -457,44 +460,41 @@ int GPSCommandHandler(uint8_t *cmd,uint16_t cmdptr)
 	Serial.println((char *)cmd);
 #endif
 	
-	int retval=0;
+	int retval=1;
+	uint8_t cnt;
 	
 	switch(cmd[1]|0x20)
 	{
 		case 'p':	// position fix
-					
 					Serial.printf("Lat = %.6f, Lon = %.6f, ",lat/1e7,lon/1e7,height/1e3);
 					Serial.printf("height = %.1f\n",height/1e3);
-					retval=1;
 					break;
 		
 		case 'f':	// fix status
-					
 					if(gpsFix==0x00)		Serial.println("No Fix");
 					else if(gpsFix==0x02)	Serial.println("2D Fix");
 					else if(gpsFix==0x03)	Serial.println("3D Fix");
-					retval=1;
 					break;
 		
 		case 's':	// satellite info
-					
-					uint8_t cnt;
 					Serial.println("Chan\tPRN\tElev\tAzim\tC/No");
 					for(cnt=0;cnt<numCh;cnt++)
 					{
 						Serial.print(cnt);	Serial.print("\t"); Serial.print(svid[cnt]);	Serial.print("\t");	Serial.print(elev[cnt]);	Serial.print("\t");	Serial.print(azim[cnt]);	Serial.print("\t");	Serial.println(cno[cnt]);
 					}
 					
-					retval=1;
 					break;
 		
 		case 'l':	// live mode toggle
-					
 					gps_live_mode=!gps_live_mode;
-					retval=1;
 					break;
-					
-		case 't':	
+		
+		case '?':	Serial.print("GPS Test Harness\r\n================\r\n\n");
+					Serial.print("p\t-\tCheck positon\r\n");
+					Serial.print("f\t-\tCheck fix status\r\n");
+					Serial.print("s\t-\tCheck satellite status\r\n");
+					Serial.print("l\t-\tLive GPS data on/off\r\n");
+					Serial.print("?\t-\tShow this menu\r\n");
 					break;
 		
 		default:	retval=0;
