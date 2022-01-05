@@ -1,6 +1,8 @@
 
 bool psensor_enable=true;
 
+uint32_t NextPsensor=0;
+
 int SetupPressureSensor(void)
 {
 	
@@ -9,6 +11,16 @@ int SetupPressureSensor(void)
 
 void PollPressureSensor(void)
 {
-	
+	if(psensor_enable)
+	{
+		if(millis()>=NextPsensor)
+		{
+			// read the sensor
+			
+			
+			// 25Hz measurement rate
+			NextPsensor=millis()+40L;
+		}
+	}	
 }
 

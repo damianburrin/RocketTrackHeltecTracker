@@ -2,11 +2,13 @@
 uint8_t batvolt=0x00;
 bool livepmicdata=false;
 
+AXP20X_Class axp;
+
 int SetupPMIC(void)
 {
 	Serial.print("AXP192 Init");
-	if(!axp.begin(Wire, AXP192_SLAVE_ADDRESS))	{	Serial.println(" PASS");	} 
-	else                                        {	Serial.println(" FAIL");	}
+	if(!axp.begin(Wire, AXP192_SLAVE_ADDRESS))	{	Serial.println(" PASS\r\n");	} 
+	else                                        {	Serial.println(" FAIL\r\n");	}
 	
 	axp.setPowerOutPut(AXP192_LDO2,AXP202_ON);
 	axp.setPowerOutPut(AXP192_LDO3,AXP202_ON);
@@ -15,15 +17,15 @@ int SetupPMIC(void)
 	axp.setPowerOutPut(AXP192_DCDC1,AXP202_ON);
 	axp.setDCDC1Voltage(3300);
 	
-	Serial.printf("\tDCDC1 2v5: %s\n",axp.isDCDC1Enable()?"ENABLE":"DISABLE");
-	Serial.printf("\tDCDC2 Not Used: %s\n",axp.isDCDC2Enable()?"ENABLE":"DISABLE");
-	Serial.printf("\tLDO2 LoRa: %s\n",axp.isLDO2Enable()?"ENABLE":"DISABLE");
-	Serial.printf("\tLDO3 GPS: %s\n",axp.isLDO3Enable()?"ENABLE":"DISABLE");
-	Serial.printf("\tDCDC3 3v3: %s\n",axp.isDCDC3Enable()?"ENABLE":"DISABLE");
-	Serial.printf("\tExten: %s\n",axp.isExtenEnable()?"ENABLE":"DISABLE");
+	Serial.printf("\tDCDC1 2v5: %s\r\n",axp.isDCDC1Enable()?"ENABLE":"DISABLE");
+	Serial.printf("\tDCDC2 Not Used: %s\r\n",axp.isDCDC2Enable()?"ENABLE":"DISABLE");
+	Serial.printf("\tLDO2 LoRa: %s\r\n",axp.isLDO2Enable()?"ENABLE":"DISABLE");
+	Serial.printf("\tLDO3 GPS: %s\r\n",axp.isLDO3Enable()?"ENABLE":"DISABLE");
+	Serial.printf("\tDCDC3 3v3: %s\r\n",axp.isDCDC3Enable()?"ENABLE":"DISABLE");
+	Serial.printf("\tExten: %s\r\n\n",axp.isExtenEnable()?"ENABLE":"DISABLE");
 
-	if(axp.isChargeingEnable())	{	Serial.println("Charging is enabled");	}
-	else						{	Serial.println("Charging is disabled");	}
+	if(axp.isChargeingEnable())	{	Serial.print("Charging is enabled\r\n\n");	}
+	else						{	Serial.print("Charging is disabled\r\n\n");	}
 	
 	axp.adc1Enable(AXP202_BATT_CUR_ADC1,true);
 	
@@ -92,5 +94,17 @@ int PMICCommandHandler(uint8_t *cmd,uint16_t cmdptr)
 	}
 	
 	return(retval);
+}
+
+void ControlLED(axp_chgled_mode_t Mode)
+{
+	static axp_chgled_mode_t OldMode=AXP20X_LED_OFF;
+
+	if(Mode!=OldMode)
+	{
+		axp.setChgLEDMode(Mode);
+		
+		OldMode=Mode;
+	}
 }
 

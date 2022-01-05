@@ -1,7 +1,10 @@
 
+/*
 #include "FS.h"
 #include "SD.h"
 #include "SPI.h"
+
+#define SDCARD_NSS			4		// GPIO4 for select line to SD Card socket
 
 bool sdcard_enable=true;
 
@@ -45,4 +48,4 @@ int SetupSDCard(void)
 	
 	return(0);
 }
-
+*/

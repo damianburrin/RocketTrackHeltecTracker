@@ -1,4 +1,5 @@
 
+bool leds_enable=true;
 uint32_t NextLEDs=0;
 
 // LED modes:
@@ -15,24 +16,17 @@ int SetupLEDs(void)
 	return(0);
 }
 
-void ControlLED(axp_chgled_mode_t Mode)
-{
-	static axp_chgled_mode_t OldMode=AXP20X_LED_OFF;
-
-	if(Mode!=OldMode)
-	{
-		axp.setChgLEDMode(Mode);
-		
-		OldMode=Mode;
-	}
-}
-
 void PollLEDs(void)
 {
-	if(millis()>=NextLEDs)
+	if(leds_enable)
 	{
-//		ControlLED(AXP20X_LED_BLINK_1HZ);
-		NextLEDs=millis()+1000L;
+		if(millis()>=NextLEDs)
+		{
+			// do something, dunno what just yet
+			
+			// run the leds on a 10Hz cycle
+			NextLEDs=millis()+100L;
+		}
 	}
 }
 

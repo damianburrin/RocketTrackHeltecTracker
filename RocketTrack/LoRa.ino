@@ -30,6 +30,32 @@ bool LoRaTransmit=0;
 
 uint32_t TXStartTimeMillis;
 
+
+
+
+
+// LORA settings
+#define LORA_FREQUENCY	434.650
+#define LORA_OFFSET		0         // Frequency to add in kHz to make Tx frequency accurate
+
+#define LORA_ID			0
+#define LORA_MODE		0
+
+//------------------------------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------------------------------
+
+// HARDWARE DEFINITION
+
+#define LORA_NSS			18		// Comment out to disable LoRa code
+#define LORA_RESET			14		// Comment out if not connected
+#define LORA_DIO0			26
+
+
+
+
+
+
 double lora_frequency=LORA_FREQUENCY;
 double lora_offset=LORA_OFFSET;
 uint8_t lora_mode=0;
