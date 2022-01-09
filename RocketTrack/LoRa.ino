@@ -1,4 +1,6 @@
 
+#define DEBUG 3
+
 /*---------------------------------------------------*\
 |                                                     |
 | LoRa radio code, for downlink, uplink and repeating |
@@ -30,31 +32,17 @@ bool LoRaTransmit=0;
 
 uint32_t TXStartTimeMillis;
 
-
-
-
-
 // LORA settings
-#define LORA_FREQUENCY	434.650
-#define LORA_OFFSET		0         // Frequency to add in kHz to make Tx frequency accurate
+#define LORA_FREQUENCY		434.650
+#define LORA_OFFSET			0         // Frequency to add in kHz to make Tx frequency accurate
 
-#define LORA_ID			0
-#define LORA_MODE		0
-
-//------------------------------------------------------------------------------------------------------
-
-//------------------------------------------------------------------------------------------------------
+#define LORA_ID				0
+#define LORA_MODE			0
 
 // HARDWARE DEFINITION
-
 #define LORA_NSS			18		// Comment out to disable LoRa code
 #define LORA_RESET			14		// Comment out if not connected
 #define LORA_DIO0			26
-
-
-
-
-
 
 double lora_frequency=LORA_FREQUENCY;
 double lora_offset=LORA_OFFSET;
@@ -76,7 +64,8 @@ uint32_t LastLoRaTX=0;
 int SetupLoRa(void)
 {
 	setupRFM98(LORA_FREQUENCY,LORA_MODE);
-	
+
+#if 0	
 	pinMode(USER_BUTTON,INPUT);
 	
 	delay(100);
@@ -86,6 +75,7 @@ int SetupLoRa(void)
 		Serial.println("Using permanent GPS transmit mode ...");
 		lora_constant_transmit=true;
 	}
+#endif
 	
 	return(0);
 }
@@ -109,7 +99,7 @@ void setupRFM98(double Frequency,int Mode)
 	pinMode(LORA_NSS,OUTPUT);
 	pinMode(LORA_DIO0,INPUT);
 
-	SPI.begin(SCK,MISO,MOSI);
+//	SPI.begin(SCK,MISO,MOSI);
 	
 	// LoRa mode 
 	setLoRaMode();
@@ -128,7 +118,7 @@ void setupRFM98(double Frequency,int Mode)
 	// Go to standby mode
 	setMode(RF98_MODE_STANDBY);
 	
-	Serial.println("Setup Complete");
+	Serial.println("\tLoRa Setup Complete");
 }
 
 void setLoraOperatingMode(int Mode)
@@ -193,33 +183,34 @@ void setMode(byte newMode)
 		return;  
 	
 #if (DEBUG>1)
-	Serial.printf("Set LoRa Mode %d\n",newMode);
+//	Serial.printf("Set Mode %d\r\n",newMode);
 #endif
 	
 	switch(newMode) 
 	{
-		case RF98_MODE_TX:				writeRegister(REG_LNA,LNA_OFF_GAIN);		// TURN LNA OFF FOR TRANSMIT
+		case RF98_MODE_TX:				Serial.print("\tRF98_MODE_TX\r\n");
+										writeRegister( REG_IRQ_FLAGS,0x08); 
+										writeRegister(REG_LNA,LNA_OFF_GAIN);		// TURN LNA OFF FOR TRANSMIT
 										writeRegister(REG_PA_CONFIG,PA_MAX_UK);
 										writeRegister(REG_OPMODE,newMode);
 										TXStartTimeMillis=millis();
-//										ControlLED(AXP20X_LED_BLINK_4HZ);
 										currentMode=newMode; 
 										break;
 		
-		case RF98_MODE_RX_CONTINUOUS:	writeRegister(REG_PA_CONFIG,PA_OFF_BOOST);	// TURN PA OFF FOR RECEIVE??
+		case RF98_MODE_RX_CONTINUOUS:	Serial.print("\tRF98_MODE_RX CONTINUOUS\r\n");
+										writeRegister(REG_PA_CONFIG,PA_OFF_BOOST);	// TURN PA OFF FOR RECEIVE??
 										writeRegister(REG_LNA,LNA_MAX_GAIN);  		// MAX GAIN FOR RECEIVE
 										writeRegister(REG_OPMODE,newMode);
-//										ControlLED(AXP20X_LED_BLINK_1HZ);
 										currentMode=newMode;	 
 										break;
 		
-		case RF98_MODE_SLEEP:			writeRegister(REG_OPMODE,newMode);
-//										ControlLED(AXP20X_LED_OFF);
+		case RF98_MODE_SLEEP:			Serial.print("\tRF98_MODE SLEEP\r\n");
+										writeRegister(REG_OPMODE,newMode);
 										currentMode=newMode; 
 										break;
 		
-		case RF98_MODE_STANDBY:			writeRegister(REG_OPMODE,newMode);
-//										ControlLED(AXP20X_LED_OFF);
+		case RF98_MODE_STANDBY:			Serial.print("\tRF98_MODE STANDBY\r\n");
+										writeRegister(REG_OPMODE,newMode);
 										currentMode=newMode; 
 										break;
 		
@@ -239,7 +230,7 @@ byte readRegister(byte addr)
 	LoRa_unselect();
 	
 #if (DEBUG>2)
-	Serial.printf("RD Reg %02X=%02X\n",addr,regval);
+	Serial.printf("\tRD Reg %02X=%02X\r\n",addr,regval);
 #endif
 	
 	return regval;
@@ -253,7 +244,7 @@ void writeRegister(byte addr,byte value)
 	LoRa_unselect();
 
 #if (DEBUG>2)
-	Serial.printf("WR Reg %02X=%02X\n",addr,value);
+	Serial.printf("\t\tWR Reg %02X=%02X\r\n",addr,value);
 #endif
 }
 
@@ -267,30 +258,6 @@ void LoRa_unselect()
 	digitalWrite(LORA_NSS,HIGH);
 }
 
-/*
-int LoRaIsFree(void)
-{
-	if(		(LoRaMode!=lmSending)
-		||	digitalRead(LORA_DIO0)	)
-	{
-		// Either not sending, or was but now it's sent.  Clear the flag if we need to
-		if(LoRaMode==lmSending)
-		{
-			// Clear that IRQ flag
-			writeRegister(REG_IRQ_FLAGS,0x08); 
-			LoRaMode=lmIdle;
-			
-			ControlLED(AXP20X_LED_OFF);
-			
-			uint32_t TXBurstTime=millis()-TXStartTimeMillis;
-			Serial.print("Tx burst time=");	Serial.print(TXBurstTime);	Serial.println(" ms");
-		}
-	}
-	
-	return 0;
-}
-*/
-
 void SendLoRaPacket(unsigned char *buffer,int Length)
 {
 	int i;
@@ -299,7 +266,7 @@ void SendLoRaPacket(unsigned char *buffer,int Length)
 	
 //	setupRFM98(LORA_FREQUENCY,LORA_MODE);
 	
-	Serial.print("Sending "); Serial.print(Length);	Serial.println(" bytes");
+	Serial.printf("\tSending %d bytes\r\n",Length);
 	
 	setMode(RF98_MODE_STANDBY);
 	
@@ -319,13 +286,17 @@ void SendLoRaPacket(unsigned char *buffer,int Length)
 	
 	SPI.transfer(REG_FIFO|0x80);
 
+	Serial.printf("\t\tWR Reg %02X=",REG_FIFO|0x80);
+
 	for(i=0;i<Length;i++)
 	{
 #if (DEBUG>2)
-		Serial.printf("WR Reg %02X=%02X\n",REG_FIFO|0x80,buffer[i]);
+		Serial.printf("%02X ",buffer[i]);
 #endif
 		SPI.transfer(buffer[i]);
 	}
+	
+	Serial.print("\r\n");
 	
 	LoRa_unselect();
 	
@@ -337,6 +308,9 @@ void SendLoRaPacket(unsigned char *buffer,int Length)
 
 int LORACommandHandler(uint8_t *cmd,uint16_t cmdptr)
 {
+	// ignore a single key stroke
+	if(cmdptr<=2)	return(0);
+
 #if (DEBUG>0)
 	Serial.println((char *)cmd);
 #endif
@@ -401,6 +375,44 @@ int LORACommandHandler(uint8_t *cmd,uint16_t cmdptr)
 	return(retval);
 }
 
+int LongRangeCommandHandler(uint8_t *cmd,uint16_t cmdptr)
+{
+	// ignore a single key stroke
+	if(cmdptr<=2)	return(0);
+
+#if (DEBUG>0)
+	Serial.println((char *)cmd);
+#endif
+	
+	int retval=1;
+	
+	switch(cmd[1]|0x20)
+	{
+	
+		default:	// ignore
+					break;
+	}
+}
+
+int HighRateCommandHandler(uint8_t *cmd,uint16_t cmdptr)
+{
+	// ignore a single key stroke
+	if(cmdptr<=2)	return(0);
+
+#if (DEBUG>0)
+	Serial.println((char *)cmd);
+#endif
+	
+	int retval=1;
+	
+	switch(cmd[1]|0x20)
+	{
+	
+		default:	// ignore
+					break;
+	}
+}
+
 void PollLoRa(void)
 {
 	// wait for DIO0 to indicate end of transmission
@@ -414,17 +426,17 @@ void PollLoRa(void)
 		ControlLED(AXP20X_LED_OFF);
 		
 		uint32_t TXBurstTime=millis()-TXStartTimeMillis;
-		Serial.printf("Tx burst time = %d ms\r\n",TXBurstTime);
+		Serial.printf("Tx burst duration = %d ms\r\n",TXBurstTime);
 	}
 	
 	if(LoRaTransmit)
 	{
-//		ControlLED(AXP20X_LED_BLINK_4HZ);
 		ControlLED(AXP20X_LED_LOW_LEVEL);
 		
 		if(TxPacketLength>0)
 		{
-			setupRFM98(lora_frequency,lora_mode);
+			Serial.printf("Tx burst start time = %d ms\r\n",millis());
+//			setupRFM98(lora_frequency,lora_mode);
 			SendLoRaPacket(TXPacket,TxPacketLength);
 		}
 		

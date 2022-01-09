@@ -57,6 +57,9 @@ void PollPMIC(void)
 
 int PMICCommandHandler(uint8_t *cmd,uint16_t cmdptr)
 {
+	// ignore a single key stroke
+	if(cmdptr<=2)	return(0);
+
 #if (DEBUG>0)
 	Serial.println((char *)cmd);
 #endif

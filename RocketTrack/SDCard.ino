@@ -10,7 +10,7 @@ bool sdcard_enable=true;
 
 int SetupSDCard(void)
 {
-	SPI.begin(SCK,MISO,MOSI);
+//	SPI.begin(SCK,MISO,MOSI);
 	
 	if(!SD.begin(SDCARD_NSS))
 	{
