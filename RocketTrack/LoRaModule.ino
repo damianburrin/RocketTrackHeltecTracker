@@ -51,7 +51,7 @@ uint8_t lora_mode=0;
 bool lora_constant_transmit=false;
 
 tLoRaMode LoRaMode;
-byte currentMode=0x81;
+int currentMode=0x81;
 int ImplicitOrExplicit;
 
 uint8_t TXPacket[MAX_TX_PACKET_LENGTH];
@@ -82,7 +82,9 @@ int SetupLoRa(void)
 
 void setupRFM98(double Frequency,int Mode)
 {
-	int PayloadLength;
+	Serial.print("setupRFM98() entry\r\n");
+	
+//	int PayloadLength;
 	
 	// initialize the pins
 	Serial.println("Resetting LoRa Module ...");
@@ -98,7 +100,7 @@ void setupRFM98(double Frequency,int Mode)
 	pinMode(LORA_NSS,OUTPUT);
 	pinMode(LORA_DIO0,INPUT);
 
-	SPI.begin(SCK,MISO,MOSI);
+//	SPI.begin(SCK,MISO,MOSI);
 	
 	// LoRa mode 
 	setLoRaMode();
@@ -108,7 +110,7 @@ void setupRFM98(double Frequency,int Mode)
 	
 	setLoraOperatingMode(Mode);
 	
-	writeRegister(REG_PAYLOAD_LENGTH,PayloadLength);
+//	writeRegister(REG_PAYLOAD_LENGTH,PayloadLength);
 	
 	// Change the DIO mapping to 01 so we can listen for TxDone on the interrupt
 	writeRegister(REG_DIO_MAPPING_1,0x40);
@@ -117,11 +119,15 @@ void setupRFM98(double Frequency,int Mode)
 	// Go to standby mode
 	setMode(RF98_MODE_STANDBY);
 	
-	Serial.println("\tLoRa Setup Complete");
+//	Serial.println("\tLoRa Setup Complete");
+
+	Serial.print("setupRFM98() exit\r\n");
 }
 
 void setLoraOperatingMode(int Mode)
 {
+	Serial.print("setLoraOperatingMode() entry\r\n");
+	
 	int ErrorCoding;
 	int Bandwidth;
 	int SpreadingFactor;
@@ -149,77 +155,90 @@ void setLoraOperatingMode(int Mode)
 	
 	// 0x0C for SF6, 0x0A otherwise  
 	writeRegister(REG_DETECTION_THRESHOLD,(SpreadingFactor==SPREADING_6)?0x0C:0x0A);
+
+	Serial.print("setLoraOperatingMode() exit\r\n");
 }
 
 void setFrequency(double Frequency)
 {
+	Serial.print("setFrequency() entry\r\n");
+	
 	unsigned long FrequencyValue;
 	
-	Serial.print("Frequency is ");
-	Serial.println(Frequency);
+	Serial.printf("\tFrequency is %.3f MHz\r\n",Frequency);
 	
 	Frequency=Frequency*7110656/434;
 	FrequencyValue=(unsigned long)(Frequency);
 	
 #if (DEBUG>1)
-	Serial.printf("FrequencyValue is %d\r\n",FrequencyValue);
+	Serial.printf("\tFrequencyValue is %d\r\n",FrequencyValue);
 #endif
 	
 	// Set frequency
 	writeRegister(0x06,(FrequencyValue>>16)&0xFF);
 	writeRegister(0x07,(FrequencyValue>>8)&0xFF);
 	writeRegister(0x08,FrequencyValue&0xFF);
+
+	Serial.print("setFrequency() exit\r\n");
 }
 
 void setLoRaMode()
 {
-	Serial.println("Setting LoRa Mode");
-	
+	Serial.print("setLoRaMode() entry\r\n");
+		
 	setMode(RF98_MODE_SLEEP);
 	writeRegister(REG_OPMODE,0x80);
+
+	Serial.print("setLoRaMode() exit\r\n");
 }
 
 void setMode(byte newMode)
 {
+	Serial.print("setMode() entry\r\n");
+	
 	if(newMode==currentMode)
-		return;  
-	
-#if (DEBUG>1)
-//	Serial.printf("Set Mode %d\r\n",newMode);
-#endif
-	
-	switch(newMode) 
 	{
-		case RF98_MODE_TX:				Serial.print("\tRF98_MODE_TX\r\n");
-										writeRegister(REG_LNA,LNA_OFF_GAIN);		// TURN LNA OFF FOR TRANSMIT
+		Serial.print("\tNot changing mode\r\n");
+	}
+	else
+	{
+		Serial.printf("\tChanging mode to %d\r\n",newMode);
+		
+		switch(newMode) 
+		{
+			case RF98_MODE_TX:				Serial.print("\tRF98_MODE_TX\r\n");
+											writeRegister(REG_LNA,LNA_OFF_GAIN);		// TURN LNA OFF FOR TRANSMIT
 #if 0
-										writeRegister(REG_PA_CONFIG,PA_MAX_UK);
+											writeRegister(REG_PA_CONFIG,PA_MAX_UK);
 #else
-										writeRegister(REG_PA_CONFIG,PA_LOW_BOOST);
+											writeRegister(REG_PA_CONFIG,PA_LOW_BOOST);
 #endif
-										TXStartTimeMillis=millis();
-										break;
+											TXStartTimeMillis=millis();
+											break;
+			
+			case RF98_MODE_RX_CONTINUOUS:	Serial.print("\tRF98_MODE_RX CONTINUOUS\r\n");
+											writeRegister(REG_PA_CONFIG,PA_OFF_BOOST);	// TURN PA OFF FOR RECEIVE??
+											writeRegister(REG_LNA,LNA_MAX_GAIN);  		// MAX GAIN FOR RECEIVE
+											break;
+			
+			case RF98_MODE_SLEEP:			Serial.print("\tRF98_MODE SLEEP\r\n");
+											break;
+			
+			case RF98_MODE_STANDBY:			Serial.print("\tRF98_MODE STANDBY\r\n");
+											break;
+			
+			default: 						// do nothing
+											return;
+		} 
 		
-		case RF98_MODE_RX_CONTINUOUS:	Serial.print("\tRF98_MODE_RX CONTINUOUS\r\n");
-										writeRegister(REG_PA_CONFIG,PA_OFF_BOOST);	// TURN PA OFF FOR RECEIVE??
-										writeRegister(REG_LNA,LNA_MAX_GAIN);  		// MAX GAIN FOR RECEIVE
-										break;
+		writeRegister(REG_OPMODE,newMode);
+		currentMode=newMode; 
 		
-		case RF98_MODE_SLEEP:			Serial.print("\tRF98_MODE SLEEP\r\n");
-										break;
-		
-		case RF98_MODE_STANDBY:			Serial.print("\tRF98_MODE STANDBY\r\n");
-										break;
-		
-		default: 						// do nothing
-										return;
-	} 
+		if(newMode!=RF98_MODE_SLEEP)
+			delay(10);
+	}
 	
-	writeRegister(REG_OPMODE,newMode);
-	currentMode=newMode; 
-	
-	if(newMode!=RF98_MODE_SLEEP)
-		delay(10);
+	Serial.print("setMode() exit\r\n");
 }
 
 byte readRegister(byte addr)
@@ -260,7 +279,9 @@ void LoRa_unselect()
 
 void SendLoRaPacket(unsigned char *buffer,int Length)
 {
-	int i;
+	Serial.print("SendLoRaPacket() entry\r\n");
+
+	Serial.printf("\tTx burst start time = %d ms\r\n",millis());
 	
 	LastLoRaTX=millis();
 	
@@ -295,7 +316,8 @@ void SendLoRaPacket(unsigned char *buffer,int Length)
 #if (DEBUG>2)
 	Serial.printf("\t\tWR Reg %02X=",REG_FIFO|0x80);
 #endif
-		
+	
+	int i;	
 	for(i=0;i<Length;i++)
 	{
 #if (DEBUG>2)
@@ -313,7 +335,9 @@ void SendLoRaPacket(unsigned char *buffer,int Length)
 	// go into transmit mode
 	setMode(RF98_MODE_TX);
 	
-	LoRaMode=lmSending;
+//	LoRaMode=lmSending;
+	
+	Serial.print("SendLoRaPacket() exit\r\n");
 }
 
 int LORACommandHandler(uint8_t *cmd,uint16_t cmdptr)
@@ -445,8 +469,8 @@ void PollLoRa(void)
 		
 		if(TxPacketLength>0)
 		{
-			Serial.printf("Tx burst start time = %d ms\r\n",millis());
-			setupRFM98(lora_frequency,lora_mode);
+//			Serial.printf("Tx burst start time = %d ms\r\n",millis());
+//			setupRFM98(lora_frequency,lora_mode);
 			SendLoRaPacket(TXPacket,TxPacketLength);
 		}
 		
