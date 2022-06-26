@@ -1,6 +1,8 @@
 
-#ifndef LORA_H
-#define LORA_H
+#ifndef LORAMODULE_H
+#define LORAMODULE_H
+	
+	#if 0
 	
 	// RFM98 registers
 	
@@ -104,4 +106,5 @@
 	#define LNA_MAX_GAIN                0x23  // 0010 0011
 	#define LNA_OFF_GAIN                0x00
 	
+	#endif
 #endif
