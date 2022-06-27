@@ -16,7 +16,7 @@ void PollScheduler(void)
 			&&	(lora_constant_transmit)	)
 		{
 			PackPacket();
-			EncryptPacket(TXPacket);
+			EncryptPacket(TxPacket);
 			
 			LoRaTransmit=1;
 			

@@ -1,4 +1,6 @@
 
+#define LORA_ID 0
+
 void PackPacket(void)
 {
 	static uint16_t packetcounter=0;
@@ -47,7 +49,7 @@ void PackPacket(void)
 	packet[14]=(packetcounter&0x00ff)>>0;
 	packet[15]=(packetcounter&0xff00)>>8;
 	
-	memcpy(TXPacket,packet,16);
+	memcpy(TxPacket,packet,16);
 	TxPacketLength=16;
 	
 	packetcounter++;

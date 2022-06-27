@@ -1,13 +1,15 @@
 
 #include <axp20x.h>
 
+#include <LoRa.h>
+
 //#include "FS.h"
 //#include "SD.h"
 
 #include "SPI.h"
 
-//#include "SDCard.h"
-
+#include "ConfigFile.h"
+#include "SDCard.h"
 #include "PressureSensor.h"
 #include "Neopixels.h"
 #include "Leds.h"
@@ -19,13 +21,20 @@
 #define MISO				19		// GPIO19 -- SX1278's MISO
 #define MOSI				27		// GPIO27 -- SX1278's MOSI
 
+// HARDWARE DEFINITION
+
+#define SDCARD_MISO			19		// orangey red
+#define SDCARD_MOSI			27		// purple
+#define SDCARD_SCK			5		// green
+#define SDCARD_NSS			4		// yellow
+
 #define USER_BUTTON			38
 
 void setup()
 {
 	// Serial port(s)
 	Serial.begin(115200);
-	Serial.print("\nRocketTrack Flight Telemetry System\r\n\n");
+	Serial.print("\n--------\tRocketTrack Flight Telemetry System\t--------\r\n\n");
 	
 	// SPI
 	SPI.begin(SCK,MISO,MOSI);
@@ -33,36 +42,38 @@ void setup()
 	// I2C
 	Wire.begin(21,22);
 	
+	// SD card is optional but if present, modes of operation are configured
+	// from a file rather than just compiled-in defaults.  It will also use
+	// a more elaborate web page too
+	
+//	if(SetupSDCard())			{	Serial.print("SD Card Setup failed, disabling ...\r\n");			sdcard_enable=false;	}
+	
 	// mandatory peripherals
 	
 	if(SetupPMIC())				{	Serial.print("PMIC Setup failed, halting ...\r\n");					while(1);				}
-	if(SetupScheduler())		{	Serial.print("Scheduler Setup failed, halting ...\r\n");			while(1);				}
-	if(SetupCrypto())			{	Serial.print("Crypto Setup failed, halting ...\r\n");				while(1);				}
 	if(SetupLoRa())				{	Serial.print("LoRa Setup failed, halting ...\r\n");					while(1);				}
 	if(SetupGPS())				{	Serial.print("GPS Setup failed, halting ...\r\n");					while(1);				}
+  
+#if 0
+	if(SetupScheduler())		{	Serial.print("Scheduler Setup failed, halting ...\r\n");			while(1);				}
+	if(SetupCrypto())			{	Serial.print("Crypto Setup failed, halting ...\r\n");				while(1);				}
 	if(SetupLEDs())				{	Serial.print("LED Setup failed, halting ...\r\n");					while(1);				}
 	
 	// optional peripherals
 	
-//	if(SetupSDCard())			{	Serial.print("SD Card Setup failed, disabling ...\r\n");			sdcard_enable=false;	}
 	if(SetupPressureSensor())	{	Serial.print("Pressure Sensor Setup failed, disabling ...\r\n");	psensor_enable=false;	}
 	if(SetupBeeper())			{	Serial.print("Beeper Setup failed, disabling ...\r\n");				beeper_enable=false;	}
 	if(SetupNeopixels())		{	Serial.print("Neopixels Setup failed, disabling ...\r\n");			neopixels_enable=false;	}
+#endif
 }
+
+int counter=0;
 
 void loop()
 {
 	PollPMIC();
-	PollScheduler();
-	PollLoRa();
 	PollGPS();
-//	PollLEDs();
-
-//	PollSDCard();
-//	PollPressureSensor();
-//	PollBeeper();
-//	PollNeopixels();
-
+	PollLoRa();
 	PollSerial();
 }
 
@@ -97,8 +108,6 @@ void ProcessCommand(uint8_t *cmd,uint16_t cmdptr)
 {
 	int OK=0;
 	
-//	Serial.println(cmd[0]);
-	
 	switch(cmd[0]|0x20)
 	{
 		case 'g':	OK=GPSCommandHandler(cmd,cmdptr);			break;
@@ -129,7 +138,7 @@ void ProcessCommand(uint8_t *cmd,uint16_t cmdptr)
 					break;
 	}
 
-	if(OK)	{	Serial.println("*");	}
+	if(OK)	{	Serial.println("ok ...");	}
 	else	{	Serial.println("?");	}
 }
 

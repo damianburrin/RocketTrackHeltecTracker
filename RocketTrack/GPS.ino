@@ -156,32 +156,6 @@ void SetFlightMode(byte NewMode)
 	SendUBX(setNav,sizeof(setNav));
 }
     
-#ifdef POWERSAVING
-void SetGNSSMode(void)
- {
-	// Sets CFG-GNSS to disable everything other than GPS GNSS
-	// solution. Failure to do this means GPS power saving 
-	// doesn't work. Not needed for MAX7, needed for MAX8's
-	
-	uint8_t setGNSS[]={	0xB5,0x62,0x06,0x3E,0x2C,0x00,0x00,0x00,0x20,0x05,0x00,0x08,0x10,0x00,0x01,0x00,0x01,0x01,0x01,0x01,0x03,0x00,0x00,0x00,0x01,0x01,0x03,0x08,0x10,0x00,0x00,0x00,0x01,0x01,0x05,0x00,0x03,0x00,0x00,0x00,0x01,0x01,0x06,0x08,0x0E,0x00,0x00,0x00,0x01,0x01,0xFC,0x11	};
-		
-	SendUBX(setGNSS,sizeof(setGNSS));
-} 
-#endif
-
-#ifdef POWERSAVING
-void SetPowerMode(byte SavePower)
-{
-	uint8_t setPSM[]={	0xB5,0x62,0x06,0x11,0x02,0x00,0x08,0x01,0x22,0x92 };
-	
-	setPSM[7]=SavePower?1:0;
-	
-	FixUBXChecksum(setPSM,sizeof(setPSM));
-	
-	SendUBX(setPSM,sizeof(setPSM));
-}
-#endif
-
 void ChangeBaudRate(uint32_t BaudRate)
 {
 	char cmd[64];
@@ -223,32 +197,32 @@ int SetupGPS(void)
 	// every 200ms
 	
 	Serial1.begin(9600,SERIAL_8N1,34,12);	// Pins for T-Beam v0.8 (3 push buttons) and up
-	
+  
 	delay(500);
 	
-#if 1
+  #if 1
 	ChangeBaudRate(115200);
 	
 	Serial1.flush();
 	Serial1.end();
 	
 	Serial1.begin(115200,SERIAL_8N1,34,12);	// Pins for T-Beam v0.8 (3 push buttons) and up
-#endif
+  #endif
 	
-#if 0
+  #if 0
 	Set5Hz_Fix_Rate();
-#endif
+  #endif
 
-#if 0
+  #if 0
 	SetMessageRate(0xf0,0x00,0x01);	// GPGGA
-	SetMessageRate(0xf0,0x01,0x00);	// GPGLL
+	SetMessageRate(0xf0,0x01,0x01);	// GPGLL
 	SetMessageRate(0xf0,0x02,0x05);	// GPGSA
 	SetMessageRate(0xf0,0x03,0x05);	// GPGSV
-	SetMessageRate(0xf0,0x04,0x00);	// GPRMC
-	SetMessageRate(0xf0,0x05,0x00);	// GPVTG
-#endif	
+	SetMessageRate(0xf0,0x04,0x01);	// GPRMC
+	SetMessageRate(0xf0,0x05,0x01);	// GPVTG
+  #endif	
 	
-#if 1
+  #if 1
 	// turn off all NMEA output
 	
 	SetMessageRate(0xf0,0x00,0x00);	// GPGGA
@@ -257,34 +231,37 @@ int SetupGPS(void)
 	SetMessageRate(0xf0,0x03,0x00);	// GPGSV
 	SetMessageRate(0xf0,0x04,0x00);	// GPRMC
 	SetMessageRate(0xf0,0x05,0x00);	// GPVTG
-#endif	
+  #endif	
 	
-#if 0
+  #if 1
 	SetMessageRate(0x01,0x02,0x01);	// NAV-POSLLH every fix
 	SetMessageRate(0x01,0x03,0x01);	// NAV-STATUS every fix
 	SetMessageRate(0x01,0x30,0x01);	// NAV-SVINFO every fix
-#endif	
-#if 1
+  #endif	
+
+  #if 0
 	// turn on the useful UBX messages
 	
 	SetMessageRate(0x01,0x02,0x01);	// NAV-POSLLH every fix
-#if 1
+
+    #if 0
 	SetMessageRate(0x01,0x03,0x05);	// NAV-STATUS every 5th fix
 	SetMessageRate(0x01,0x30,0x05);	// NAV-SVINFO every 5th fix
-#else
+    #else
 	SetMessageRate(0x01,0x03,0x01);	// NAV-STATUS every fix
 	SetMessageRate(0x01,0x30,0x01);	// NAV-SVINFO every fix
-#endif
-#if 0
+    #endif
+
+    #if 0
 	EnableRawMeasurements();
-#endif
+    #endif
 	
-#if 0
+    #if 0
 	SetMessageRate(0x02,0x10,0x05);	// RXM-RAW every 5th fix
-#else
+    #else
 	SetMessageRate(0x02,0x10,0x00);	// RXM-RAW off
-#endif
-#endif
+    #endif
+  #endif
 	
 #else
 	Serial1.begin(9600,SERIAL_8N1,12,15);	// For version 0.7 (2 push buttons) and down
@@ -506,4 +483,3 @@ int GPSCommandHandler(uint8_t *cmd,uint16_t cmdptr)
 	
 	return(retval);
 }
-
