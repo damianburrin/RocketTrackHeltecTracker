@@ -221,11 +221,18 @@ void PollLoRa(void)
 	}
 	else
 	{
-#if 0
+#if 1
 		if(millis()>(now+10000))
 		{
+	#if 1
+			PackPacket();
+			EncryptPacket(TxPacket);
+			TxPacketLength=16;
+	#else
 			strcpy((char *)TxPacket,"Hello, world ...");
 			TxPacketLength=strlen((char *)TxPacket);
+	#endif
+			
 			LoRaTransmit=1;
 		}
 #endif
