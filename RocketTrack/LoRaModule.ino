@@ -83,33 +83,13 @@ int LORACommandHandler(uint8_t *cmd,uint16_t cmdptr)
 					break;
 		
 		case 't':	Serial.println("Transmitting LoRa packet");
-					strcpy((char *)TxPacket,"Hello, world!");
-					TxPacketLength=strlen((char *)TxPacket);
-//					memcpy(TxPacket,"$$Hello world!\r\n",16);
-//					EncryptPacket(TxPacket);
-//					TxPacketLength=16;
+//					strcpy((char *)TxPacket,"Hello, world!");
+//					TxPacketLength=strlen((char *)TxPacket);
+					memcpy(TxPacket,"Hello, world ...",16);
+					EncryptPacket(TxPacket);
+					TxPacketLength=16;
 					LoRaTransmit=1;
 
-#if 0					
-					now=millis();
-										
-#if 0
-					Serial.println("Setting LoRa parameters");
-					LoRa.setTxPower(5);
-					LoRa.setSpreadingFactor(7);
-					LoRa.setSignalBandwidth(20.8E3);
-					LoRa.setCodingRate4(8);
-#endif
-					
-					LoRa.beginPacket(true);
-					LoRa.write(TxPacket,TxPacketLength);
-					LoRa.endPacket();
-
-					Serial.print("\tblocking lora tx done in ");
-					Serial.print(millis()-now);
-					Serial.println(" ms");
-#endif
-					
 					break;
 		
 		case 'g':	Serial.println("Transmitting GPS LoRa packet");
@@ -118,10 +98,6 @@ int LORACommandHandler(uint8_t *cmd,uint16_t cmdptr)
 					TxPacketLength=16;
 					LoRaTransmit=1;
 					
-					LoRa.beginPacket();
-					LoRa.write(TxPacket,TxPacketLength);
-					LoRa.endPacket(true);
-
 					break;
 		
 		case 'l':	Serial.println("Long range mode");
@@ -215,34 +191,44 @@ void PollLoRa(void)
 		Serial.println("Starting tx ...");
 		
 		now=millis();
-										
+		
 #if 1
 		Serial.println("Setting LoRa parameters");
 		LoRa.setTxPower(5);
+		
+	#if 0
 		LoRa.setSpreadingFactor(11);
 		LoRa.setSignalBandwidth(125E3);
 		LoRa.setCodingRate4(8);
-		LoRa.setFrequency(434.65E6);
+	#else
+		LoRa.setSpreadingFactor(12);
+		LoRa.setSignalBandwidth(31.25E3);
+		LoRa.setCodingRate4(8);
+	#endif
+		
+		LoRa.setFrequency(lora_frequency);
 #endif
-					
+		
 		LoRa.beginPacket(false);
 		LoRa.write(TxPacket,TxPacketLength);
 		LoRa.endPacket();
-
+		
 		Serial.print("\tblocking lora tx done in ");
 		Serial.print(millis()-now);
 		Serial.println(" ms");
-					
+		
 		LoRaTransmit=0;
 	}
 	else
 	{
-		if(millis()>(now+5000))
+#if 0
+		if(millis()>(now+10000))
 		{
-			strcpy((char *)TxPacket,"Hello, world!");
+			strcpy((char *)TxPacket,"Hello, world ...");
 			TxPacketLength=strlen((char *)TxPacket);
 			LoRaTransmit=1;
 		}
+#endif
 	}
 #endif	
 	
