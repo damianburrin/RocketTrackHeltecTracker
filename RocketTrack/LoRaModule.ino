@@ -1,15 +1,17 @@
 
 #define DEBUG 3
 
+#define LOW_POWER_TRANSMIT 0
+
 //#include <SPI.h>
 #include <string.h>
 
 #include "LoRa.h"
 #include "Packetisation.h"
 
-typedef enum {lmIdle, lmListening, lmSending} tLoRaMode;
+//typedef enum {lmIdle, lmListening, lmSending} tLoRaMode;
 
-bool LoRaTransmit=0;
+bool LoRaTransmitSemaphore=0;
 
 uint32_t TXStartTimeMillis;
 
@@ -24,7 +26,7 @@ uint32_t TXStartTimeMillis;
 
 double lora_frequency=LORA_FREQ;
 double lora_offset=LORA_OFFSET;
-int lora_mode=0;
+int lora_mode=1;
 
 bool lora_constant_transmit=false;
 
@@ -52,9 +54,8 @@ int SetupLoRa(void)
 		Serial.println("Started LoRa ok ...");
 		return(0);
 	}
-
-//	LoRa.enableInvertIQ();
-//	LoRa.onTxDone(onTxDone);
+	
+	SetLoRaMode(lora_mode);
 }
 
 void onTxDone()
@@ -75,9 +76,6 @@ int LORACommandHandler(uint8_t *cmd,uint16_t cmdptr)
 	
 	switch(cmd[1]|0x20)
 	{
-//		case 'x':	Serial.println(LoRa.getSignalBandwidth());
-//					break;
-					
 		case 'd':	Serial.println("Dumping LoRa registers");
 					LoRa.dumpRegisters(Serial);
 					break;
@@ -88,7 +86,7 @@ int LORACommandHandler(uint8_t *cmd,uint16_t cmdptr)
 					memcpy(TxPacket,"Hello, world ...",16);
 					EncryptPacket(TxPacket);
 					TxPacketLength=16;
-					LoRaTransmit=1;
+					LoRaTransmitSemaphore=1;
 
 					break;
 		
@@ -96,16 +94,18 @@ int LORACommandHandler(uint8_t *cmd,uint16_t cmdptr)
 					PackPacket();
 					EncryptPacket(TxPacket);
 					TxPacketLength=16;
-					LoRaTransmit=1;
+					LoRaTransmitSemaphore=1;
 					
 					break;
 		
 		case 'l':	Serial.println("Long range mode");
 					lora_mode=0;
+					SetLoRaMode(lora_mode);
 					break;
 		
 		case 'h':	Serial.println("High rate mode");
 					lora_mode=1;
+					SetLoRaMode(lora_mode);
 					break;
 		
 		case 'm':	if(lora_mode==0)	Serial.print("Long range mode\r\n");
@@ -181,48 +181,69 @@ int HighRateCommandHandler(uint8_t *cmd,uint16_t cmdptr)
 	}
 }
 
+void SetLoRaMode(int mode)
+{
+#if LOW_POWER_TRANSMIT
+	LoRa.setTxPower(5);
+#else
+	LoRa.setTxPower(17);
+#endif
+	
+	switch(mode)
+	{
+		case 0:		Serial.println("Setting LoRa to long range mode");
+					LoRa.setSpreadingFactor(12);
+					LoRa.setSignalBandwidth(31.25E3);
+					LoRa.setCodingRate4(8);
+					break;
+		
+		case 1:		Serial.println("Setting LoRa to high rate mode");
+					LoRa.setSpreadingFactor(7);
+					LoRa.setSignalBandwidth(125E3);
+					LoRa.setCodingRate4(8);
+					break;
+		
+		default:	Serial.println("Duff LoRa mode selected!");
+					break;
+	}
+}
+
 int now;
 
 void PollLoRa(void)
 {
 #if 1
-	if(LoRaTransmit)
+	if(LoRaTransmitSemaphore)
 	{
-		Serial.println("Starting tx ...");
+		Serial.print("Starting tx ...");
 		
 		now=millis();
 		
-#if 1
+#if 0
 		Serial.println("Setting LoRa parameters");
 		LoRa.setTxPower(5);
 		
-	#if 0
-		LoRa.setSpreadingFactor(11);
-		LoRa.setSignalBandwidth(125E3);
-		LoRa.setCodingRate4(8);
-	#else
-		LoRa.setSpreadingFactor(12);
-		LoRa.setSignalBandwidth(31.25E3);
-		LoRa.setCodingRate4(8);
-	#endif
-		
-		LoRa.setFrequency(lora_frequency);
+		SetLoRaMode(lora_mode);
 #endif
+		LoRa.setFrequency(lora_frequency);
 		
 		LoRa.beginPacket(false);
 		LoRa.write(TxPacket,TxPacketLength);
-		LoRa.endPacket();
+		LoRa.endPacket(false);
 		
-		Serial.print("\tblocking lora tx done in ");
+		Serial.print("\t\tlora tx done in ");
 		Serial.print(millis()-now);
 		Serial.println(" ms");
 		
-		LoRaTransmit=0;
+		LoRaTransmitSemaphore=0;
 	}
 	else
 	{
-#if 1
-		if(millis()>(now+10000))
+#if 0
+		if(		(		(lora_mode==0)
+					&&	(millis()>(now+10000))	)
+			||	(		(lora_mode==1)
+					&&	(millis()>(now+1000))	)	)
 		{
 	#if 1
 			PackPacket();
@@ -233,7 +254,7 @@ void PollLoRa(void)
 			TxPacketLength=strlen((char *)TxPacket);
 	#endif
 			
-			LoRaTransmit=1;
+			LoRaTransmitSemaphore=1;
 		}
 #endif
 	}

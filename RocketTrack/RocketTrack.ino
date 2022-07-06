@@ -28,8 +28,6 @@
 #define SDCARD_SCK			5		// green
 #define SDCARD_NSS			4		// yellow
 
-#define USER_BUTTON			38
-
 void setup()
 {
 	// Serial port(s)
@@ -53,17 +51,18 @@ void setup()
 	if(SetupPMIC())				{	Serial.print("PMIC Setup failed, halting ...\r\n");					while(1);				}
 	if(SetupLoRa())				{	Serial.print("LoRa Setup failed, halting ...\r\n");					while(1);				}
 	if(SetupGPS())				{	Serial.print("GPS Setup failed, halting ...\r\n");					while(1);				}
-  
-#if 0
-	if(SetupScheduler())		{	Serial.print("Scheduler Setup failed, halting ...\r\n");			while(1);				}
 	if(SetupCrypto())			{	Serial.print("Crypto Setup failed, halting ...\r\n");				while(1);				}
-	if(SetupLEDs())				{	Serial.print("LED Setup failed, halting ...\r\n");					while(1);				}
+	if(SetupScheduler())		{	Serial.print("Scheduler Setup failed, halting ...\r\n");			while(1);				}
 	
+#if 0
 	// optional peripherals
 	
-	if(SetupPressureSensor())	{	Serial.print("Pressure Sensor Setup failed, disabling ...\r\n");	psensor_enable=false;	}
+	if(SetupLEDs())				{	Serial.print("LED Setup failed, halting ...\r\n");					while(1);				}
 	if(SetupBeeper())			{	Serial.print("Beeper Setup failed, disabling ...\r\n");				beeper_enable=false;	}
 	if(SetupNeopixels())		{	Serial.print("Neopixels Setup failed, disabling ...\r\n");			neopixels_enable=false;	}
+#endif
+#if 0
+	if(SetupPressureSensor())	{	Serial.print("Pressure Sensor Setup failed, disabling ...\r\n");	psensor_enable=false;	}
 #endif
 }
 
@@ -73,6 +72,7 @@ void loop()
 {
 	PollPMIC();
 	PollGPS();
+	PollScheduler();
 	PollLoRa();
 	PollSerial();
 }
@@ -86,8 +86,6 @@ void PollSerial(void)
 	while(Serial.available())
 	{ 
 		rxbyte=Serial.read();
-		
-//		Serial.write(rxbyte);
 		
 		cmd[cmdptr++]=rxbyte;
 		

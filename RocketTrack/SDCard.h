@@ -1,8 +1,6 @@
 
-#ifndef _SDCARD_H_
-#define _SDCARD_H_
+#pragma once
 
-	extern bool sdcard_enable;
+extern bool sdcard_enable;
 
-#endif
 

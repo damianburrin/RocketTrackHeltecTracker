@@ -447,7 +447,7 @@ int GPSCommandHandler(uint8_t *cmd,uint16_t cmdptr)
 	{
 		case 'p':	// position fix
 					Serial.printf("Lat = %.6f, Lon = %.6f, ",lat/1e7,lon/1e7,height/1e3);
-					Serial.printf("height = %.1f\n",height/1e3);
+					Serial.printf("height = %.1f\r\n",height/1e3);
 					break;
 		
 		case 'f':	// fix status
