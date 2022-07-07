@@ -32,6 +32,9 @@ void setup()
 {
 	// Serial port(s)
 	Serial.begin(115200);
+	
+	while(!Serial);		// wait for a serial connection
+	
 	Serial.print("\n--------\tRocketTrack Flight Telemetry System\t--------\r\n\n");
 	
 	// SPI
@@ -44,16 +47,21 @@ void setup()
 	// from a file rather than just compiled-in defaults.  It will also use
 	// a more elaborate web page too
 	
+	// disabled until i build some hardware with this wiring
 //	if(SetupSDCard())			{	Serial.print("SD Card Setup failed, disabling ...\r\n");			sdcard_enable=false;	}
 	
 	// mandatory peripherals
 	
 	if(SetupPMIC())				{	Serial.print("PMIC Setup failed, halting ...\r\n");					while(1);				}
+	if(SetupWebServer())		{	Serial.print("Web Server Setup failed, disabling ...\r\n");									}
+	
+#if 0
+	// disabled while i'm messing around with the web page
 	if(SetupLoRa())				{	Serial.print("LoRa Setup failed, halting ...\r\n");					while(1);				}
 	if(SetupGPS())				{	Serial.print("GPS Setup failed, halting ...\r\n");					while(1);				}
 	if(SetupCrypto())			{	Serial.print("Crypto Setup failed, halting ...\r\n");				while(1);				}
 	if(SetupScheduler())		{	Serial.print("Scheduler Setup failed, halting ...\r\n");			while(1);				}
-	
+#endif
 #if 0
 	// optional peripherals
 	
