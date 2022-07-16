@@ -1,8 +1,9 @@
 
-#ifndef _PMIC_H_
-#define _PMIC_H_
+#pragma once
 
-	
+#include "AXP202.h"
 
-#endif
-
+int SetupPMIC(void);
+void PollPMIC(void);
+int PMICCommandHandler(uint8_t *cmd,uint16_t cmdptr);
+void ControlLED(axp_chgled_mode_t Mode);

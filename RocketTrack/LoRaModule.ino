@@ -37,12 +37,15 @@ uint16_t TxPacketCounter=0;
 
 uint32_t LastLoRaTX=0;
 
+int now;
+
 int SetupLoRa(void)
 {
 	Serial.println("LoRa Sender");
 
     LoRa.setPins(LORA_NSS,LORA_RESET,LORA_DIO0);
-
+	LoRa.onTxDone(onTxDone);
+	
 //	if(!LoRa.begin(lora_frequency))
 	if(!LoRa.begin(434.650E6))
 	{
@@ -60,7 +63,9 @@ int SetupLoRa(void)
 
 void onTxDone()
 {
-	Serial.println("Tx Done!");
+	Serial.print("\t\tlora tx done in ");
+	Serial.print(millis()-now);
+	Serial.println(" ms");
 }
 
 int LORACommandHandler(uint8_t *cmd,uint16_t cmdptr)
@@ -81,20 +86,34 @@ int LORACommandHandler(uint8_t *cmd,uint16_t cmdptr)
 					break;
 		
 		case 't':	Serial.println("Transmitting LoRa packet");
-//					strcpy((char *)TxPacket,"Hello, world!");
-//					TxPacketLength=strlen((char *)TxPacket);
 					memcpy(TxPacket,"Hello, world ...",16);
 					EncryptPacket(TxPacket);
 					TxPacketLength=16;
 					LoRaTransmitSemaphore=1;
-
+					
+					if(lora_mode==0)
+						LedPattern=0xf0f0f000;
+					else
+						LedPattern=0xaaa00000;
+					
+					LedRepeatCount=0;
+					LedBitCount=0;					
+					
 					break;
-		
+					
 		case 'g':	Serial.println("Transmitting GPS LoRa packet");
 					PackPacket();
 					EncryptPacket(TxPacket);
 					TxPacketLength=16;
 					LoRaTransmitSemaphore=1;
+					
+					if(lora_mode==0)
+						LedPattern=0xf0f0f000;
+					else
+						LedPattern=0xaaa00000;
+					
+					LedRepeatCount=0;
+					LedBitCount=0;
 					
 					break;
 		
@@ -192,12 +211,22 @@ void SetLoRaMode(int mode)
 	switch(mode)
 	{
 		case 0:		Serial.println("Setting LoRa to long range mode");
+					
+					LedPattern=0xf0f0f000;
+					LedRepeatCount=0;
+					LedBitCount=0;					
+					
 					LoRa.setSpreadingFactor(12);
 					LoRa.setSignalBandwidth(31.25E3);
 					LoRa.setCodingRate4(8);
 					break;
 		
 		case 1:		Serial.println("Setting LoRa to high rate mode");
+					
+					LedPattern=0xaaa00000;
+					LedRepeatCount=0;
+					LedBitCount=0;					
+					
 					LoRa.setSpreadingFactor(7);
 					LoRa.setSignalBandwidth(125E3);
 					LoRa.setCodingRate4(8);
@@ -208,11 +237,8 @@ void SetLoRaMode(int mode)
 	}
 }
 
-int now;
-
 void PollLoRa(void)
 {
-#if 1
 	if(LoRaTransmitSemaphore)
 	{
 		Serial.print("Starting tx ...");
@@ -229,38 +255,9 @@ void PollLoRa(void)
 		
 		LoRa.beginPacket(false);
 		LoRa.write(TxPacket,TxPacketLength);
-		LoRa.endPacket(false);
-		
-		Serial.print("\t\tlora tx done in ");
-		Serial.print(millis()-now);
-		Serial.println(" ms");
+		LoRa.endPacket(true);
 		
 		LoRaTransmitSemaphore=0;
 	}
-	else
-	{
-#if 0
-		if(		(		(lora_mode==0)
-					&&	(millis()>(now+10000))	)
-			||	(		(lora_mode==1)
-					&&	(millis()>(now+1000))	)	)
-		{
-	#if 1
-			PackPacket();
-			EncryptPacket(TxPacket);
-			TxPacketLength=16;
-	#else
-			strcpy((char *)TxPacket,"Hello, world ...");
-			TxPacketLength=strlen((char *)TxPacket);
-	#endif
-			
-			LoRaTransmitSemaphore=1;
-		}
-#endif
-	}
-#endif	
-	
-//	Serial.println(LoRa.random());
-
 }
 

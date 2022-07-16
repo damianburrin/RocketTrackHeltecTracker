@@ -220,11 +220,8 @@ int SetupGPS(void)
 	SetMessageRate(0xf0,0x03,0x05);	// GPGSV
 	SetMessageRate(0xf0,0x04,0x01);	// GPRMC
 	SetMessageRate(0xf0,0x05,0x01);	// GPVTG
-  #endif	
-	
-  #if 1
-	// turn off all NMEA output
-	
+  #else	
+	// turn off all NMEA output	
 	SetMessageRate(0xf0,0x00,0x00);	// GPGGA
 	SetMessageRate(0xf0,0x01,0x00);	// GPGLL
 	SetMessageRate(0xf0,0x02,0x00);	// GPGSA
@@ -233,6 +230,13 @@ int SetupGPS(void)
 	SetMessageRate(0xf0,0x05,0x00);	// GPVTG
   #endif	
 	
+  #if 1
+	SetMessageRate(0x01,0x02,0x01);	// NAV-POSLLH every fix
+	SetMessageRate(0x01,0x03,0x01);	// NAV-STATUS every fix
+	SetMessageRate(0x01,0x30,0x01);	// NAV-SVINFO every fix
+  #endif	
+
+	delay(100);
   #if 1
 	SetMessageRate(0x01,0x02,0x01);	// NAV-POSLLH every fix
 	SetMessageRate(0x01,0x03,0x01);	// NAV-STATUS every fix

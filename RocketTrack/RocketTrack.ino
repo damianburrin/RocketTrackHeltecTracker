@@ -53,19 +53,23 @@ void setup()
 	// mandatory peripherals
 	
 	if(SetupPMIC())				{	Serial.print("PMIC Setup failed, halting ...\r\n");					while(1);				}
+
+#if 1
 	if(SetupWebServer())		{	Serial.print("Web Server Setup failed, disabling ...\r\n");									}
-	
-#if 0
+#endif
+#if 1
 	// disabled while i'm messing around with the web page
 	if(SetupLoRa())				{	Serial.print("LoRa Setup failed, halting ...\r\n");					while(1);				}
 	if(SetupGPS())				{	Serial.print("GPS Setup failed, halting ...\r\n");					while(1);				}
 	if(SetupCrypto())			{	Serial.print("Crypto Setup failed, halting ...\r\n");				while(1);				}
 	if(SetupScheduler())		{	Serial.print("Scheduler Setup failed, halting ...\r\n");			while(1);				}
+
+	// optional peripherals
+	if(SetupLEDs())				{	Serial.print("LED Setup failed, halting ...\r\n");					while(1);				}
 #endif
 #if 0
 	// optional peripherals
 	
-	if(SetupLEDs())				{	Serial.print("LED Setup failed, halting ...\r\n");					while(1);				}
 	if(SetupBeeper())			{	Serial.print("Beeper Setup failed, disabling ...\r\n");				beeper_enable=false;	}
 	if(SetupNeopixels())		{	Serial.print("Neopixels Setup failed, disabling ...\r\n");			neopixels_enable=false;	}
 #endif
@@ -83,6 +87,7 @@ void loop()
 	PollScheduler();
 	PollLoRa();
 	PollSerial();
+	PollLEDs();
 }
 
 void PollSerial(void)

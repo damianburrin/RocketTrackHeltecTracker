@@ -8,8 +8,12 @@ uint8_t LedBitCount=0;
 
 int SetupLEDs(void)
 {
-	Serial.print("\tSetting LED off\r\n");
+	Serial.println("Setting LED off");
 	ControlLED(AXP20X_LED_OFF);
+
+	LedPattern=0xffffffff;
+	LedRepeatCount=2;
+	LedBitCount=0;					
 
 	return(0);
 }
@@ -64,15 +68,21 @@ int LEDCommandHandler(uint8_t *cmd,uint16_t cmdptr)
 					LedBitCount=0;
 					break;
 		
-		case '0':	ControlLED(AXP20X_LED_OFF);
+		case '0':	LedPattern=0x00000000;
+					LedRepeatCount=0xffff;
+					LedBitCount=0;
 					break;
 					
-		case '1':	ControlLED(AXP20X_LED_LOW_LEVEL);
+		case '1':	LedPattern=0xffffffff;
+					LedRepeatCount=0xffff;
+					LedBitCount=0;
 					break;
 					
 		default:	// ignore
+					retval=0;
 					break;
 	}
+	
+	return(retval);
 }
-
 

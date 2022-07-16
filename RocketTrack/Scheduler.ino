@@ -29,17 +29,18 @@ void PollScheduler(void)
 	{
 		Serial.println("Button released");
 		
-		if(millis()>(button_timer+1000))
+		if(millis()>(button_timer+5000))
+		{
+			lora_mode=!lora_mode;
+			SetLoRaMode(lora_mode);
+			Serial.print("Toggling lora_mode to ");
+			Serial.println(lora_mode);
+		}
+		else if(millis()>(button_timer+1000))
 		{
 			lora_constant_transmit=!lora_constant_transmit;
 			Serial.print("Setting constant transmit to ");
 			Serial.println(lora_constant_transmit);
-		}
-		else
-		{
-			lora_mode=!lora_mode;
-			Serial.print("Toggling lora_mode to ");
-			Serial.println(lora_mode);
 		}
 	}
 	
@@ -55,8 +56,20 @@ void PollScheduler(void)
 			TxPacketLength=16;
 			LoRaTransmitSemaphore=1;
 			
-			if(lora_mode==0)	next_transmit=millis()+10000;
-			else				next_transmit=millis()+1000;
+			if(lora_mode==0)
+			{
+				next_transmit=millis()+10000;
+				LedPattern=0xf0f0f0f0;
+				LedRepeatCount=1;
+				LedBitCount=0;										
+			}
+			else
+			{
+				next_transmit=millis()+1000;
+				LedPattern=0xaaaaaaaa;
+				LedRepeatCount=1;
+				LedBitCount=0;					
+			}
 			
 			Serial.printf("millis() = %d\r\n",millis());
 		}

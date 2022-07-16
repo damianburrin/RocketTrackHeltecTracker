@@ -106,7 +106,6 @@ void ControlLED(axp_chgled_mode_t Mode)
 	if(Mode!=OldMode)
 	{
 		axp.setChgLEDMode(Mode);
-		
 		OldMode=Mode;
 	}
 }
