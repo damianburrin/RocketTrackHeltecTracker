@@ -8,23 +8,7 @@
 #include "SPIFFS.h"
 #include <ESPmDNS.h>	
 
-#ifdef STATIONMODE
-	#if 0
-		const char *ssid="SKYG8K8Y";			//Replace with your own SSID
-		const char *password="SKrz8jk6iiLq";	//Replace with your own password
-	#endif
-	#if 1
-		const char *ssid="TECHNICOLOUR";
-		const char *password="9c1d7150de459d2f18823632739eaae8";
-	#endif
-	#if 0
-		const char *ssid="MOLEY";
-		const char *password="sausageeggchipsandbeans";
-	#endif
-#else
-	const char *ssid="rockettrack";
-	const char *password="eggsbenedict";
-#endif
+#include "/home/chris/Projects/Rocketry/TTGO Beam/RocketTrack/RocketTrack/network_creds.ino"
 
 // Create AsyncWebServer object on port 80
 AsyncWebServer server(80);
@@ -32,48 +16,109 @@ AsyncWebServer server(80);
 // Replaces placeholder with LED state value
 String processor(const String& var)
 {
-	char buffer[32];
+//	Serial.println("webserver process entry");
 	
-	if(var=="MODE_FROM_TEMPLATE")
-		return F("Long Range Mode, yeah!");
-	else if(var=="BAT_CURRENT")
+	char buffer[256];
+	memset(buffer,0,sizeof(buffer));
+	
+	if(var=="LORA_MODE")
 	{
-		if(axp.isChargeingEnable())
-			sprintf(buffer,"%.1f",axp.getBattChargeCurrent());
-		else
-			sprintf(buffer,"%.1f",axp.getBattDischargeCurrent());
-		
-		return(buffer);
-	}
-	else if(var=="BAT_VOLTAGE")
-	{
-		sprintf(buffer,"%.3f",axp.getBattVoltage()/1000);
-		return(buffer);
+		if(lora_mode==1)	sprintf(buffer,"High Rate");	else	sprintf(buffer,"Long Range");
 	}
 	else if(var=="BAT_STATUS")
 	{
 		if(axp.isChargeingEnable())
-			return F("\"Charging\"");
+			sprintf(buffer,"\"Charging\"");
 		else
-			return F("\"Discharging\"");
+			sprintf(buffer,"\"Discharging\"");
+	}
+	else if(var=="BAT_CURRENT")
+	{
+/*
+		if(axp.isChargeingEnable())
+			sprintf(buffer,"%.1f",axp.getBattChargeCurrent());
+		else
+			sprintf(buffer,"%.1f",axp.getBattDischargeCurrent());
+*/
+		sprintf(buffer,"%.1f",axp.getBattChargeCurrent()/1e3);
+	}
+	else if(var=="BAT_VOLTAGE")
+	{
+		sprintf(buffer,"%.3f",axp.getBattVoltage()/1000);
 	}
 	else if(var=="LATITUDE")
 	{
-		if(lat>0)	sprintf(buffer,"%2.6f N",lat/1e7);
-		else		sprintf(buffer,"%2.6f S",-lat/1e7);
-		return(buffer);
+		if(lat>0)	sprintf(buffer,"%2.6f N",lat/1e7);	else	sprintf(buffer,"%2.6f S",-lat/1e7);
 	}
 	else if(var=="LONGITUDE")
 	{
-		if(lon>0)	sprintf(buffer,"%3.6f E",lon/1e7);
-		else		sprintf(buffer,"%3.6f W",-lon/1e7);
-		return(buffer);
+		if(lon>0)	sprintf(buffer,"%3.6f E",lon/1e7);	else	sprintf(buffer,"%3.6f W",-lon/1e7);
 	}
 	else if(var=="ALTITUDE")
 	{
 		sprintf(buffer,"%.1f",height/1e3);
-		return(buffer);
 	}
+	else if(var=="NUM_CHANNELS")
+	{
+		sprintf(buffer,"%d",numCh);
+	}
+	else if(var=="GPS_FIX")
+	{
+		sprintf(buffer,"%d",gpsFix);
+	}
+	else if(var=="HORIZONTAL_ACCURACY")
+	{
+		sprintf(buffer,"%.1f",hAcc);
+	}
+	else if(var=="SAT_NUMS")
+	{
+		int cnt=0;
+		for(cnt=0;cnt<numCh;cnt++)
+		{
+			if(cnt!=(numCh-1))
+				sprintf(buffer+strlen(buffer),"%d,",svid[cnt]);
+			else
+				sprintf(buffer+strlen(buffer),"%d",svid[cnt]);
+		}
+	}
+	else if(var=="SAT_ELEVS")
+	{
+		int cnt=0;
+		for(cnt=0;cnt<numCh;cnt++)
+		{
+			if(cnt!=(numCh-1))
+				sprintf(buffer+strlen(buffer),"%d,",elev[cnt]);
+			else
+				sprintf(buffer+strlen(buffer),"%d",elev[cnt]);
+		}
+	}
+	else if(var=="SAT_AZS")
+	{
+		int cnt=0;
+		for(cnt=0;cnt<numCh;cnt++)
+		{
+			if(cnt!=(numCh-1))
+				sprintf(buffer+strlen(buffer),"%d,",azim[cnt]);
+			else
+				sprintf(buffer+strlen(buffer),"%d",azim[cnt]);
+		}
+	}
+	else if(var=="SAT_SNRS")
+	{
+		int cnt=0;
+		for(cnt=0;cnt<numCh;cnt++)
+		{
+			if(cnt!=(numCh-1))
+				sprintf(buffer+strlen(buffer),"%d,",cno[cnt]);
+			else
+				sprintf(buffer+strlen(buffer),"%d",cno[cnt]);
+		}
+	}
+	
+//	Serial.println("webserver process exit");
+	
+	if(strlen(buffer)>0)
+		return(buffer);
 	else
 		return String();
 }

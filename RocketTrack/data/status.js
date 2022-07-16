@@ -6,14 +6,21 @@ function DrawSatPlot()
 //	ctx.textAlign = "center";
 //	ctx.fillText("Hello World", canvas.width/2, canvas.height/2);	
 
-	const sat_nums=[12,23];
-	const sat_elevs=[60,5];
-	const sat_azs=[45,170];
-	const sat_snrs=[31,40];
+	const sat_nums=[%SAT_NUMS%];
+	const sat_elevs=[%SAT_ELEVS%];
+	const sat_azs=[%SAT_AZS%];
+	const sat_snrs=[%SAT_SNRS%];
+	
+	var satcnt=0;
+	
+	for(let cnt=0;cnt<sat_nums.length;cnt++)
+	{
+		if(sat_snrs[cnt]>5)	{	satcnt++;	}
+	}
 	
 	DrawSatCrosshairs();
 	DrawSatSpots(sat_nums,sat_elevs,sat_azs,sat_snrs);
-	DrawTextData();
+	DrawTextData(satcnt);
 	
 	DrawSatBars(sat_nums,sat_elevs,sat_azs,sat_snrs);
 }
@@ -55,27 +62,27 @@ function DrawSatSpots(sat_nums,sat_elevs,sat_azs,sat_snrs)
 	
 	for(let cnt=0;cnt<sat_nums.length;cnt++)
 	{
-		SatSpotAt(canvas,ctx,sat_azs[cnt],sat_elevs[cnt],sat_nums[cnt]);
+		SatSpotAt(canvas,ctx,sat_azs[cnt],sat_elevs[cnt],sat_nums[cnt],sat_snrs[cnt]);
 	}
 }
 
-function DrawTextData()
+function DrawTextData(satcnt)
 {
 	var canvas=document.getElementById("satelliteplot");
 	var ctx=canvas.getContext("2d");
 	
 	// these all need to be set by the ayncwebserver templating stuff
 	
-	var numCh=2;
-	var gpsFix=0;
-	var hAcc=30;
+	var numCh=%NUM_CHANNELS%;
+	var gpsFix=%GPS_FIX%;
+	var hAcc=%HORIZONTAL_ACCURACY%;
 	
 	var batCurrent=%BAT_CURRENT%;
 	var batVolt=%BAT_VOLTAGE%;
 	var batStatus=%BAT_STATUS%;
 	
 	var frequency=434.650;
-	var loramode="%MODE_FROM_TEMPLATE%";
+	var loramode="%LORA_MODE%";
 	
 	var latitude="%LATITUDE%";
 	var longitude="%LONGITUDE%";
@@ -85,7 +92,7 @@ function DrawTextData()
 	ctx.textAlign = "left";
 	
 	ctx.font="30px Comic Sans MS";
-	ctx.fillText(numCh+" sats",-0.45*canvas.width,0.35*canvas.height);
+	ctx.fillText(satcnt+" / "+numCh+" sats",-0.45*canvas.width,0.35*canvas.height);
 	
 	if(gpsFix==0)		ctx.fillText("No Fix",-0.45*canvas.width,0.40*canvas.height);
 	else if(gpsFix==2)	ctx.fillText("2D Fix",-0.45*canvas.width,0.40*canvas.height);
@@ -109,21 +116,27 @@ function DrawTextData()
 	ctx.fillText(loramode,0.45*canvas.width,0.40*canvas.height);
 }
 
-function SatSpotAt(canvas,ctx,az,el,num)
+function SatSpotAt(canvas,ctx,az,el,num,snr)
 {
+	az-=90;
+	
 	console.log(Math.cos(az*Math.PI/180));
 	
 	var radius=0.9*canvas.width/2*(90-el)/90;
 	
+	var colour="green";
+	
+	if(snr<5)	{	colour="red";	}
+	
 	ctx.beginPath();
-	ctx.fillStyle="#008000";
+	ctx.fillStyle=colour;
 	ctx.arc(Math.cos(az*Math.PI/180)*radius,Math.sin(az*Math.PI/180)*radius,15,0,2*Math.PI);
 	ctx.fill();
 	
 	var sathoriz=25;
 	var satvert=10;
 	
-	ctx.strokeStyle="#008000";
+	ctx.strokeStyle=colour;
 	ctx.beginPath();
 	ctx.moveTo(Math.cos(az*Math.PI/180)*radius-sathoriz,Math.sin(az*Math.PI/180)*radius);
 	ctx.lineTo(Math.cos(az*Math.PI/180)*radius+sathoriz,Math.sin(az*Math.PI/180)*radius);
