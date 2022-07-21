@@ -33,7 +33,7 @@ void setup()
 	// Serial port(s)
 	Serial.begin(115200);
 	
-	while(!Serial);		// wait for a serial connection
+//	while(!Serial);		// wait for a serial connection
 	
 	Serial.print("\n--------\tRocketTrack Flight Telemetry System\t--------\r\n\n");
 	
