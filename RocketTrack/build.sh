@@ -1,6 +1,6 @@
 #!/bin/bash
 
-rm data/*~
+rm data/*~ 2>/dev/null
 
 mkspiffs -c data -b 4096 -p 256 -s 0x170000 rockettrack.spiffs.bin
 
