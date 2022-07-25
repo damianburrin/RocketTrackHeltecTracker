@@ -51,9 +51,9 @@ void PollScheduler(void)
 		if(		(LoRaTransmitSemaphore==0)
 			&&	(lora_constant_transmit)	)
 		{
-			PackPacket();
+			PackPacket(TxPacket,&TxPacketLength);
 			EncryptPacket(TxPacket);
-			TxPacketLength=16;
+//			TxPacketLength=16;
 			LoRaTransmitSemaphore=1;
 			
 			if(lora_mode==0)

@@ -1,9 +1,12 @@
 #!/bin/bash
 
-rm data/*~ 2>/dev/null
+arduino-cli lib uninstall SD
 
-mkspiffs -c data -b 4096 -p 256 -s 0x170000 rockettrack.spiffs.bin
+rm webdata/*~ 2>/dev/null
 
-~/arduino-cli/arduino-cli compile \
+mkspiffs -c webdata -b 4096 -p 256 -s 0x170000 rockettrack.spiffs.bin
+
+arduino-cli compile \
 	--fqbn esp32:esp32:t-beam \
+	--verbose \
 	RocketTrack.ino 

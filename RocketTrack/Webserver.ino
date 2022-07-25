@@ -3,6 +3,8 @@
 
 #include "Webserver.h"
 
+#ifdef ARDUINO_TBeam
+
 #include "WiFi.h"
 #include "ESPAsyncWebServer.h"
 #include "SPIFFS.h"
@@ -249,7 +251,17 @@ int SetupWebServer(void)
 	return(0);
 }
 
+#else
+
+int SetupWebServer(void)
+{
+	return(0);
+}
+
+#endif
+
 void PollWebServer(void)
 {
 	
 }
+

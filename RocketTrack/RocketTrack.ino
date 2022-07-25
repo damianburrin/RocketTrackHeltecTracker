@@ -38,8 +38,12 @@ void setup()
 	Serial.print("\n--------\tRocketTrack Flight Telemetry System\t--------\r\n\n");
 	
 	// SPI
-	SPI.begin(SCK,MISO,MOSI);
 	
+#ifdef ARDUINO_TBeam
+	SPI.begin(SCK,MISO,MOSI);
+#else
+	SPI.begin();
+#endif
 	// I2C
 	Wire.begin(21,22);
 	

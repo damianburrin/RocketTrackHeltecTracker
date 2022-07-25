@@ -1,9 +1,11 @@
 #!/bin/bash
 
-rm data/*~ 2>/dev/null
+arduino-cli lib install SD
 
-mkspiffs -c data -b 4096 -p 256 -s 0x170000 rockettrack.spiffs.bin
+rm configdata/*~ 2>/dev/null
+mkspiffs -c configdata -b 4096 -p 256 -s 0x170000 rockettrack.spiffs.bin
 
-~/arduino-cli/arduino-cli compile \
-	--fqbn esp32:esp32:t-beam \
+arduino-cli compile \
+	--fqbn adafruit:samd:adafruit_feather_m0 \
+	--verbose \
 	RocketTrack.ino 

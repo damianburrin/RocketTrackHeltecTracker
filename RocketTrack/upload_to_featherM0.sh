@@ -3,7 +3,7 @@
 ~/arduino-cli/arduino-cli upload \
 	--port /dev/ttyUSB0 \
 	--verbose \
-	--fqbn esp32:esp32:t-beam
+	--fqbn adafruit:samd:adafruit_feather_m0
 
 python "/home/chris/.arduino15/packages/esp32/tools/esptool_py/3.0.0/esptool.py" \
 	--chip esp32 \

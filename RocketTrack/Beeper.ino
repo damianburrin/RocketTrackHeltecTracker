@@ -66,11 +66,14 @@ int BeeperCommandHandler(uint8_t *cmd,uint16_t cmdptr)
 					BeeperPattern=0b11101110111000111010111;
 					BeeperRepeatCount=3;
 					BeeperBitCount=0;
+					retval=0;
 					break;
 					
 	
 		default:	// ignore
 					break;
 	}
+	
+	return(retval);
 }
 

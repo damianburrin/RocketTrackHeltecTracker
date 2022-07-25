@@ -1,6 +1,4 @@
 
-#define DEBUG 3
-
 #define LOW_POWER_TRANSMIT 0
 
 //#include <SPI.h>
@@ -31,7 +29,7 @@ int lora_mode=1;
 bool lora_constant_transmit=false;
 
 uint8_t TxPacket[MAX_TX_PACKET_LENGTH];
-uint8_t TxPacketLength;
+uint16_t TxPacketLength;
 
 uint16_t TxPacketCounter=0;
 
@@ -102,9 +100,9 @@ int LORACommandHandler(uint8_t *cmd,uint16_t cmdptr)
 					break;
 					
 		case 'g':	Serial.println("Transmitting GPS LoRa packet");
-					PackPacket();
+					PackPacket(TxPacket,&TxPacketLength);
 					EncryptPacket(TxPacket);
-					TxPacketLength=16;
+//					TxPacketLength=16;
 					LoRaTransmitSemaphore=1;
 					
 					if(lora_mode==0)
@@ -179,6 +177,8 @@ int LongRangeCommandHandler(uint8_t *cmd,uint16_t cmdptr)
 		default:	// ignore
 					break;
 	}
+	
+	return(retval);
 }
 
 int HighRateCommandHandler(uint8_t *cmd,uint16_t cmdptr)
@@ -198,6 +198,8 @@ int HighRateCommandHandler(uint8_t *cmd,uint16_t cmdptr)
 		default:	// ignore
 					break;
 	}
+	
+	return(retval);
 }
 
 void SetLoRaMode(int mode)

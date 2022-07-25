@@ -196,10 +196,9 @@ int SetupGPS(void)
 	// of messages off, enable some ubx messages then change the measurement rate to 
 	// every 200ms
 	
+#ifdef ARDUINO_TBeam
 	Serial1.begin(9600,SERIAL_8N1,34,12);	// Pins for T-Beam v0.8 (3 push buttons) and up
-  
-	delay(500);
-	
+
   #if 1
 	ChangeBaudRate(115200);
 	
@@ -207,7 +206,12 @@ int SetupGPS(void)
 	Serial1.end();
 	
 	Serial1.begin(115200,SERIAL_8N1,34,12);	// Pins for T-Beam v0.8 (3 push buttons) and up
-  #endif
+  #endif	
+#else
+	Serial1.begin(38400);
+#endif
+
+	delay(500);
 	
   #if 0
 	Set5Hz_Fix_Rate();

@@ -76,11 +76,14 @@ int NeopixelCommandHandler(uint8_t *cmd,uint16_t cmdptr)
 					memcpy(NeopixelPattern,NeopixelTestPattern,sizeof(NeopixelTestPattern));
 					NeopixelRepeatCount=3;
 					NeopixelBitCount=0;
+					retval=0;
 					break;
 		
 		default:	// ignore
 					break;
 	}
+	
+	return(retval);
 }
 
 
