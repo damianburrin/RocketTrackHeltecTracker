@@ -1,8 +1,10 @@
 ## RocketTrack
 
-This is a heavily modified fork of Dave Akerman's FlexTrack customised for
-use on a high power rocket using a TTGO T-Beam v1.0 or equivalent board
-fitted with an SD Card socket.
+This started as a heavily modified fork of Dave Akerman's FlexTrack 
+customised for use on a high power rocket using a TTGO T-Beam v1.0 
+or equivalent board fitted with an SD Card socket.  It now only 
+retains the code to control the power lines using the AXP202 power 
+management IC, everything else has been rewritten.
 
 ## Features 
 
@@ -83,15 +85,9 @@ the SD card if used or from a SPIFFS on the chip
 
 ## Libraries
 
-To build FlexTrack for use with a HABDuino or other tracker using I2C communications, you need to install this library into your Arduino IDE:
-
-[https://github.com/rambo/I2C](https://github.com/rambo/I2C) 
-
-In addition, for the TTGO T-Beam the AXP202X Library is required:
+For the TTGO T-Beam, the AXP202X Library is required:
 
 [https://github.com/lewisxhe/AXP202X_Library](https://github.com/lewisxhe/AXP202X_Library)
-
-Libraries can be added via the Ardunio IDE menu:  Sketch -> Include Library -> Add .zip Library
 
 ## Disclaimer
 
@@ -99,4 +95,4 @@ The RocketTrack code is provided as is with no guarantees of performance or oper
 
 ## License
 
-The hardware design & code for Habduino is released under a Creative Commons License 3.0 Attribution-ShareAlike License : http://creativecommons.org/licenses/by-sa/3.0/
+Probably GPL3 but don't quote me just yet.
