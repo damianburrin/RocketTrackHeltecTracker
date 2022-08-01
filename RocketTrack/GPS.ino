@@ -1,4 +1,13 @@
 
+#include "GPS.h"
+
+// to be set from the config file
+
+char gps_type[32];
+int initial_baud;
+int final_baud;
+int fix_rate;
+
 #define DEBUG 1
 
 #define GPS_PASSTHROUGH 0

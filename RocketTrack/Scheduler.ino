@@ -31,7 +31,9 @@ void PollScheduler(void)
 		
 		if(millis()>(button_timer+5000))
 		{
-			lora_mode=!lora_mode;
+			if(strcmp(lora_mode,"High Rate")==0)	strcpy(lora_mode,"Long Range");
+			else									strcpy(lora_mode,"High Rate");
+			
 			SetLoRaMode(lora_mode);
 			Serial.print("Toggling lora_mode to ");
 			Serial.println(lora_mode);
@@ -53,19 +55,18 @@ void PollScheduler(void)
 		{
 			PackPacket(TxPacket,&TxPacketLength);
 			EncryptPacket(TxPacket);
-//			TxPacketLength=16;
 			LoRaTransmitSemaphore=1;
 			
-			if(lora_mode==0)
+			if(strcmp(lora_mode,"Long Range")==0)
 			{
-				next_transmit=millis()+10000;
+				next_transmit=millis()+lr_period;
 				LedPattern=0xf0f0f0f0;
 				LedRepeatCount=1;
 				LedBitCount=0;										
 			}
 			else
 			{
-				next_transmit=millis()+1000;
+				next_transmit=millis()+hr_period;
 				LedPattern=0xaaaaaaaa;
 				LedRepeatCount=1;
 				LedBitCount=0;					

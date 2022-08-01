@@ -1,4 +1,6 @@
 
+int log_level=1;
+
 int SetupLogging(void)
 {
 

@@ -3,4 +3,3 @@
 
 void ReadConfigFile(void);
 
-void UseConfigDefaults(void);

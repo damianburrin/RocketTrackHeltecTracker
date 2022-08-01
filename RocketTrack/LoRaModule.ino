@@ -1,7 +1,6 @@
 
 #define LOW_POWER_TRANSMIT 0
 
-//#include <SPI.h>
 #include <string.h>
 
 #include "LoRa.h"
@@ -14,7 +13,7 @@ bool LoRaTransmitSemaphore=0;
 uint32_t TXStartTimeMillis;
 
 // LORA settings
-#define LORA_FREQ			434650000
+#define LORA_FREQ			433920000
 #define LORA_OFFSET			0         // Frequency to add in kHz to make Tx frequency accurate
 
 // HARDWARE DEFINITION
@@ -22,9 +21,21 @@ uint32_t TXStartTimeMillis;
 #define LORA_RESET			14		// Comment out if not connected
 #define LORA_DIO0			26
 
-double lora_frequency=LORA_FREQ;
+double lora_freq=LORA_FREQ;
 double lora_offset=LORA_OFFSET;
-int lora_mode=1;
+char lora_mode[32]="High Rate";
+
+int lora_crc=0;
+
+int hr_bw=1;
+int hr_sf=2;
+int hr_cr=3;
+int hr_period=4;
+
+int lr_bw=5;
+int lr_sf=6;
+int lr_cr=7;
+int lr_period=8;
 
 bool lora_constant_transmit=false;
 
@@ -44,8 +55,7 @@ int SetupLoRa(void)
     LoRa.setPins(LORA_NSS,LORA_RESET,LORA_DIO0);
 	LoRa.onTxDone(onTxDone);
 	
-//	if(!LoRa.begin(lora_frequency))
-	if(!LoRa.begin(434.650E6))
+	if(!LoRa.begin(lora_freq))
 	{
 		Serial.println("Starting LoRa failed!");
 		return(1);
@@ -83,6 +93,21 @@ int LORACommandHandler(uint8_t *cmd,uint16_t cmdptr)
 					LoRa.dumpRegisters(Serial);
 					break;
 		
+		case 'x':	Serial.print("High Rate  SF     - ");	Serial.println(hr_sf);
+					Serial.print("           BW     - ");	Serial.println(hr_bw);
+					Serial.print("           CR     - ");	Serial.println(hr_cr);
+					Serial.print("           Period - ");	Serial.println(hr_period);
+					Serial.print("Long Range SF     - ");	Serial.println(lr_sf);
+					Serial.print("           BW     - ");	Serial.println(lr_bw);
+					Serial.print("           CR     - ");	Serial.println(lr_cr);
+					Serial.print("           Period - ");	Serial.println(lr_period);
+					Serial.print("Frequency         - ");	Serial.println(lora_freq);
+					Serial.print("Offset            - ");	Serial.println(lora_offset);
+					if(lora_crc)	Serial.println("CRC Enabled");
+					else			Serial.println("CRC Disabled");
+		
+					break;
+		
 		case 't':	Serial.println("Transmitting LoRa packet");
 					memcpy(TxPacket,"Hello, world ...",16);
 					EncryptPacket(TxPacket);
@@ -116,12 +141,12 @@ int LORACommandHandler(uint8_t *cmd,uint16_t cmdptr)
 					break;
 		
 		case 'l':	Serial.println("Long range mode");
-					lora_mode=0;
+					strcpy(lora_mode,"Long Range");
 					SetLoRaMode(lora_mode);
 					break;
 		
 		case 'h':	Serial.println("High rate mode");
-					lora_mode=1;
+					strcpy(lora_mode,"High Rate");
 					SetLoRaMode(lora_mode);
 					break;
 		
@@ -202,7 +227,7 @@ int HighRateCommandHandler(uint8_t *cmd,uint16_t cmdptr)
 	return(retval);
 }
 
-void SetLoRaMode(int mode)
+void SetLoRaMode(char *mode)
 {
 #if LOW_POWER_TRANSMIT
 	LoRa.setTxPower(5);
@@ -210,37 +235,44 @@ void SetLoRaMode(int mode)
 	LoRa.setTxPower(17);
 #endif
 	
-	switch(mode)
+	if(strcmp(mode,"Long Range")==0)
 	{
-		case 0:		Serial.println("Setting LoRa to long range mode");
+		Serial.println("Setting LoRa to long range mode");
 					
-					LedPattern=0xf0f0f000;
-					LedRepeatCount=0;
-					LedBitCount=0;					
-					
-					LoRa.setSpreadingFactor(12);
-					LoRa.setSignalBandwidth(31.25E3);
-					LoRa.setCodingRate4(8);
-					break;
+		LedPattern=0xf0f0f000;
+		LedRepeatCount=0;
+		LedBitCount=0;					
 		
-		case 1:		Serial.println("Setting LoRa to high rate mode");
-					
-					LedPattern=0xaaa00000;
-					LedRepeatCount=0;
-					LedBitCount=0;					
-					
-					LoRa.setSpreadingFactor(7);
-					LoRa.setSignalBandwidth(125E3);
-					LoRa.setCodingRate4(8);
-					break;
-		
-		default:	Serial.println("Duff LoRa mode selected!");
-					break;
+		LoRa.setSpreadingFactor(lr_sf);
+		LoRa.setSignalBandwidth(lr_bw);
+		LoRa.setCodingRate4(lr_cr);
 	}
+	else if(strcmp(mode,"High Rate")==0)
+	{
+		Serial.println("Setting LoRa to high rate mode");
+					
+		LedPattern=0xaaa00000;
+		LedRepeatCount=0;
+		LedBitCount=0;					
+		
+		LoRa.setSpreadingFactor(hr_sf);
+		LoRa.setSignalBandwidth(hr_bw);
+		LoRa.setCodingRate4(hr_cr);
+	}
+	else
+	{	
+		Serial.println("Duff LoRa mode selected!");
+	}
+	
+	if(lora_crc)	LoRa.enableCrc();
+	else			LoRa.disableCrc();
 }
 
 void PollLoRa(void)
 {
+	// scale to Hz if our data is in MHz
+	if(lora_freq<1e6)	lora_freq*=1e6;
+	
 	if(LoRaTransmitSemaphore)
 	{
 		Serial.print("Starting tx ...");
@@ -253,7 +285,8 @@ void PollLoRa(void)
 		
 		SetLoRaMode(lora_mode);
 #endif
-		LoRa.setFrequency(lora_frequency);
+		
+		LoRa.setFrequency(lora_freq);
 		
 		LoRa.beginPacket(false);
 		LoRa.write(TxPacket,TxPacketLength);

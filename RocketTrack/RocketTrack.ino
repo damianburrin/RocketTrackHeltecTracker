@@ -1,4 +1,38 @@
 
+/*
+
+to be done
+
+-	sensor enables
+
+-	logging format
+
+-	wire up and integrate sd card
+
+-	wire up sensors
+
+-	test ap mode
+
+-	transmit auto start
+
+-	check low power
+
+-	flight events (based on baro, not gps altitude, using gps location too)
+
+-	turning off the gps after landing detection 
+	
+-	fsk backup mode if possible
+
+
+
+
+
+
+
+
+
+*/ 
+
 #include <axp20x.h>
 
 #include <LoRa.h>
@@ -10,10 +44,13 @@
 
 #include "ConfigFile.h"
 #include "SDCard.h"
+#include "SpiffsSupport.h"
 #include "PressureSensor.h"
 #include "Neopixels.h"
 #include "Leds.h"
 #include "Beeper.h"
+#include "WiFiSupport.h"
+#include "Webserver.h"
 
 // CONFIGURATION SECTION.
 
@@ -33,33 +70,38 @@ void setup()
 	// Serial port(s)
 	Serial.begin(115200);
 	
-//	while(!Serial);		// wait for a serial connection
+	while(!Serial);		// wait for a serial connection, for development purposes only
 	
 	Serial.print("\n--------\tRocketTrack Flight Telemetry System\t--------\r\n\n");
 	
-	// SPI
 	
 #ifdef ARDUINO_TBeam
 	SPI.begin(SCK,MISO,MOSI);
+	Wire.begin(21,22);
 #else
 	SPI.begin();
+	Wire.begin();
 #endif
-	// I2C
-	Wire.begin(21,22);
 	
 	// SD card is optional but if present, modes of operation are configured
 	// from a file rather than just compiled-in defaults.  It will also use
 	// a more elaborate web page too
 	
-	// disabled until i build some hardware with this wiring
-//	if(SetupSDCard())			{	Serial.print("SD Card Setup failed, disabling ...\r\n");			sdcard_enable=false;	}
+	if(SetupSDCard())			{	Serial.print("SD Card Setup failed, disabling ...\r\n");			sdcard_enable=0;		}
+	if(SetupSPIFFS())			{	Serial.print("SPIFFS Setup failed, disabling ...\r\n");				spiffs_enable=0;		}
+	
+	ReadConfigFile();
 	
 	// mandatory peripherals
 	
 	if(SetupPMIC())				{	Serial.print("PMIC Setup failed, halting ...\r\n");					while(1);				}
 
-#if 1
-	if(SetupWebServer())		{	Serial.print("Web Server Setup failed, disabling ...\r\n");									}
+#ifdef ARDUINO_ARCH_ESP32
+	if(SetupWiFi())				{	Serial.println("WiFi connection failed, disabling ...");			wifi_enable=0;			}
+	if(SetupWebServer())		{	Serial.print("Web Server Setup failed, disabling ...\r\n");			webserver_enable=0;		}
+#else
+	wifi_enable=0;
+	webserver_enable=0;
 #endif
 #if 1
 	// disabled while i'm messing around with the web page

@@ -1,16 +1,11 @@
 
-#define STATIONMODE 1
-
 #include "Webserver.h"
+#include "WiFiSupport.h"
 
-#ifdef ARDUINO_TBeam
-
-#include "WiFi.h"
 #include "ESPAsyncWebServer.h"
 #include "SPIFFS.h"
-#include <ESPmDNS.h>	
 
-#include "/home/chris/Projects/Rocketry/TTGO Beam/RocketTrack/RocketTrack/network_creds.ino"
+int webserver_enable=1;
 
 // Create AsyncWebServer object on port 80
 AsyncWebServer server(80);
@@ -25,7 +20,7 @@ String processor(const String& var)
 	
 	if(var=="LORA_MODE")
 	{
-		if(lora_mode==1)	sprintf(buffer,"High Rate");	else	sprintf(buffer,"Long Range");
+		sprintf(buffer,lora_mode);
 	}
 	else if(var=="BAT_STATUS")
 	{
@@ -127,138 +122,70 @@ String processor(const String& var)
 
 int SetupWebServer(void)
 {
-	// Initialize SPIFFS
-	if(!SPIFFS.begin(true))
+	if(		wifi_enable
+		&&	spiffs_enable
+		&&	webserver_enable	)
 	{
-		Serial.println("An Error has occurred while mounting SPIFFS");
-		return(1);
-	}
-	
-#if 0
-	File root=SPIFFS.open("/");
-	File file=root.openNextFile();
-	
-	while(file)
-	{
-		Serial.print("FILE: ");
-		Serial.println(file.name());
+		// Route for root / web page
+		server.on("/",HTTP_GET,[](AsyncWebServerRequest *request)					{														request->redirect("/status.html");		});	
 		
-		file=root.openNextFile();
-	}
-#endif
-#if 0
-	File status=SPIFFS.open("/status.html");
-	if(!status)
-	{
-		Serial.println("Error opening /status.html");
+		server.on("/status.html",HTTP_GET,[](AsyncWebServerRequest *request)		{	Serial.println("Returning /status.html");			request->send(SPIFFS,"/status.html");	});	
+		server.on("/status.css",HTTP_GET,[](AsyncWebServerRequest *request)			{	Serial.println("Returning /status.css");			request->send(SPIFFS,"/status.css");	});	
+		
+		server.on("/status.js",HTTP_GET,[](AsyncWebServerRequest *request)
+		{
+			Serial.println("Returning modified /status.js");
+			request->send(SPIFFS,"/status.js",String(),false,processor);
+		});	
+		
+		server.on("/config.html",HTTP_GET,[](AsyncWebServerRequest *request)		{	Serial.println("Returning /config.html");			request->send(SPIFFS,"/config.html");	});	
+		server.on("/config.css",HTTP_GET,[](AsyncWebServerRequest *request)			{	Serial.println("Returning /config.css");			request->send(SPIFFS,"/config.css");	});	
+		server.on("/config.js",HTTP_GET,[](AsyncWebServerRequest *request)			{	Serial.println("Returning /config.js");				request->send(SPIFFS,"/config.js");		});	
+		
+		server.on("/engineering.html",HTTP_GET,[](AsyncWebServerRequest *request)	{	Serial.println("Returning /engineering.html");		request->send(SPIFFS,"/engineering.html");		});	
+		server.on("/engineering.css",HTTP_GET,[](AsyncWebServerRequest *request)	{	Serial.println("Returning /engineering.css");		request->send(SPIFFS,"/engineering.css");		});	
+		server.on("/engineering.js",HTTP_GET,[](AsyncWebServerRequest *request)		{	Serial.println("Returning /engineering.js");		request->send(SPIFFS,"/engineering.js");		});	
+		
+		server.on("/pton.html",HTTP_POST,[](AsyncWebServerRequest *request)
+		{
+			Serial.println("Turning permanent transmit ON");
+			lora_constant_transmit=true;
+			request->redirect("/engineering.html");
+		});	
+		
+		server.on("/ptoff.html",HTTP_POST,[](AsyncWebServerRequest *request)
+		{
+			Serial.println("Turning permanent transmit off");
+			lora_constant_transmit=false;
+			request->redirect("/engineering.html");
+		});	
+		
+		server.on("/longrange.html",HTTP_POST,[](AsyncWebServerRequest *request)
+		{
+			Serial.println("Setting to Long Range mode");
+			strcpy(lora_mode,"Long Range");
+			SetLoRaMode(lora_mode);
+			request->redirect("/engineering.html");
+		});	
+		
+		server.on("/highrate.html",HTTP_POST,[](AsyncWebServerRequest *request)
+		{
+			Serial.println("Setting to High Rate mode");
+			strcpy(lora_mode,"High Rate");
+			SetLoRaMode(lora_mode);
+			request->redirect("/engineering.html");
+		});	
+		
+		// Start server
+		server.begin();
+		
+		return(0);
 	}
 	else
 	{
-//    while(status.available())
-
-      uint8_t buf[64];
-      status.read(buf,64);
-			Serial.print((char *)buf);
-    		
-		close(status);
+		return(1);	
 	}
-#endif
-	
-#if STATIONMODE
-	// Connect to existing Wi-Fi network
-	WiFi.begin(ssid, password);
-	while(WiFi.status()!=WL_CONNECTED)
-	{
-		delay(1000);
-		Serial.println("Connecting to WiFi...");
-	}
-	
-	// Print ESP32 Local IP Address
-	Serial.println(WiFi.localIP());
-#else
-	// Act as an Access Point
-
-	Serial.print("Setting AP (Access Point)...");
-	
-	// Remove the password parameter, if you want the AP (Access Point) to be open
-	WiFi.softAP(ssid,password);
-
-	IPAddress IP=WiFi.softAPIP();
-	Serial.print("AP IP address: ");
-	Serial.println(IP);
-#endif
-	
-	if(!MDNS.begin("esp32"))
-	{
-		Serial.println("Error starting mDNS");
-		return(1);
-	}
-	
-	// Route for root / web page
-	server.on("/",HTTP_GET,[](AsyncWebServerRequest *request)					{														request->redirect("/status.html");		});	
-//	server.on("/",HTTP_GET,[](AsyncWebServerRequest *request)					{	Serial.println("Returning /");						request->send(200,"text/plain","Hello World!");	});
-	
-	server.on("/status.html",HTTP_GET,[](AsyncWebServerRequest *request)		{	Serial.println("Returning /status.html");			request->send(SPIFFS,"/status.html");	});	
-	server.on("/status.css",HTTP_GET,[](AsyncWebServerRequest *request)			{	Serial.println("Returning /status.css");			request->send(SPIFFS,"/status.css");	});	
-//	server.on("/status.js",HTTP_GET,[](AsyncWebServerRequest *request)			{	Serial.println("Returning /status.js");				request->send(SPIFFS,"/status.js");		});	
-	
-	server.on("/status.js",HTTP_GET,[](AsyncWebServerRequest *request)
-	{
-		Serial.println("Returning modified /status.js");
-//		request->send(SPIFFS,"/status.js");
-		request->send(SPIFFS,"/status.js",String(),false,processor);
-	});	
-	
-	server.on("/config.html",HTTP_GET,[](AsyncWebServerRequest *request)		{	Serial.println("Returning /config.html");			request->send(SPIFFS,"/config.html");	});	
-	server.on("/config.css",HTTP_GET,[](AsyncWebServerRequest *request)			{	Serial.println("Returning /config.css");			request->send(SPIFFS,"/config.css");	});	
-	server.on("/config.js",HTTP_GET,[](AsyncWebServerRequest *request)			{	Serial.println("Returning /config.js");				request->send(SPIFFS,"/config.js");		});	
-	
-	server.on("/engineering.html",HTTP_GET,[](AsyncWebServerRequest *request)	{	Serial.println("Returning /engineering.html");		request->send(SPIFFS,"/engineering.html");		});	
-	server.on("/engineering.css",HTTP_GET,[](AsyncWebServerRequest *request)	{	Serial.println("Returning /engineering.css");		request->send(SPIFFS,"/engineering.css");		});	
-	server.on("/engineering.js",HTTP_GET,[](AsyncWebServerRequest *request)		{	Serial.println("Returning /engineering.js");		request->send(SPIFFS,"/engineering.js");		});	
-	
-	server.on("/pton.html",HTTP_POST,[](AsyncWebServerRequest *request)
-	{
-		Serial.println("Turning permanent transmit ON");
-		lora_constant_transmit=true;
-		request->redirect("/engineering.html");
-	});	
-	
-	server.on("/ptoff.html",HTTP_POST,[](AsyncWebServerRequest *request)
-	{
-		Serial.println("Turning permanent transmit off");
-		lora_constant_transmit=false;
-		request->redirect("/engineering.html");
-	});	
-	
-	server.on("/longrange.html",HTTP_POST,[](AsyncWebServerRequest *request)
-	{
-		Serial.println("Setting to Long Range mode");
-		SetLoRaMode(0);
-		request->redirect("/engineering.html");
-	});	
-	
-	server.on("/highrate.html",HTTP_POST,[](AsyncWebServerRequest *request)
-	{
-		Serial.println("Setting to High Rate mode");
-		SetLoRaMode(1);
-		request->redirect("/engineering.html");
-	});	
-	
-	// Start server
-	server.begin();
-	
-	return(0);
 }
-
-#else
-
-int SetupWebServer(void)
-{
-	return(0);
-}
-
-#endif
 
 void PollWebServer(void)
 {

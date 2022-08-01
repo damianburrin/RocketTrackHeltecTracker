@@ -1,21 +1,85 @@
 
-
+#define DEBUGCONFIG 1
   
-//#include <SD.h>
+#include "Accelerometer.h"
+#include "Barometer.h"
+#include "Gyro.h"
+#include "GPS.h"
+#include "LoRaModule.h"
+#include "FlightEvents.h"
+#include "Logging.h"
+#include "Webserver.h"
 
-//#include <SPI.h>
-//#include <IPAddress.h>
+#include <IniFile.h>
+#include <SPIFFSIniFile.h>
 
-//#include <IniFile.h>
+enum
+{
+	CFGSTRING=0,
+	CFGINTEGER,
+	CFGFLOAT,
+	CFGIPADDRESS
+};
 
+enum
+{
+	WIFI_STATION_MODE=0,
+	WIFI_AP_MODE
+};
 
+typedef struct
+{
+	const char section[32];
+	const char tag[32];
+	void *variable;
+	int type;
+	const char defaultvalue[32];
+} configvalue_t;
 
+configvalue_t config[]={
+	{	"Tracker",			"Autostart",		(void *)&lora_constant_transmit,	CFGINTEGER,		"0"							},
+	{	"WiFi",				"Enable",			(void *)&wifi_enable,				CFGINTEGER,		"1"							},
+	{	"WiFi",				"SSID",				(void *)ssid,						CFGSTRING,		"MOLEY"						},
+	{	"WiFi",				"Password",			(void *)password,					CFGSTRING,		"sausageeggchipsandbeans"	},
+	{	"WiFi",				"APSSID",			(void *)apssid,						CFGSTRING,		"Rocket"					},
+	{	"WiFi",				"APPassword",		(void *)appassword,					CFGSTRING,		"eggsbenedict"				},
+	{	"WiFi",				"Mode",				(void *)&wifi_mode,					CFGINTEGER,		WIFI_STATION_MODE			},
+	{	"WiFi",				"IPAddress",		(void *)&LocalIP,					CFGIPADDRESS,	"192.168.0.170"				},
+	{	"WiFi",				"Subnet",			(void *)&Subnet,					CFGIPADDRESS,	"255.255.255.0"				},
+	{	"WiFi",				"Gateway",			(void *)&Gateway,					CFGIPADDRESS,	"192.168.0.254"				},
+	{	"WiFi",				"DNS1",				(void *)&DNS1,						CFGIPADDRESS,	"212.23.3.100"				},
+	{	"WiFi",				"DNS2",				(void *)&DNS2,						CFGIPADDRESS,	"212.23.6.100"				},
+	{	"LoRa",				"Frequency",		(void *)&lora_freq,					CFGFLOAT,		"434.650"					},
+	{	"LoRa",				"Mode",				(void *)lora_mode,					CFGSTRING,		"High Rate"					},
+	{	"LoRa",				"EnableCRC",		(void *)&lora_crc,					CFGINTEGER,		"1"							},
+	{	"High Rate",		"Bandwidth",		(void *)&hr_bw,						CFGINTEGER,		"125000"					},
+	{	"High Rate",		"SpreadingFactor",	(void *)&hr_sf,						CFGINTEGER,		"7"							},
+	{	"High Rate",		"CodingRate",		(void *)&hr_cr,						CFGINTEGER,		"8"							},
+	{	"High Rate",		"TransmitPeriodMS",	(void *)&hr_period,					CFGINTEGER,		"1000"						},
+	{	"Long Range",		"Bandwidth",		(void *)&lr_bw,						CFGINTEGER,		"31250"						},
+	{	"Long Range",		"SpreadingFactor",	(void *)&lr_sf,						CFGINTEGER,		"12"						},
+	{	"Long Range",		"CodingRate",		(void *)&lr_cr,						CFGINTEGER,		"8"							},
+	{	"Long Range",		"TransmitPeriodMS",	(void *)&lr_period,					CFGINTEGER,		"10000"						},
+	{	"Flight Events",	"DetectLaunch",		(void *)&detect_launch,				CFGINTEGER,		"1"							},
+	{	"Flight Events",	"DetectApogee",		(void *)&detect_apogee,				CFGINTEGER,		"1"							},
+	{	"Flight Events",	"DetectLanding",	(void *)&detect_landing,			CFGINTEGER,		"1"							},
+	{	"GPS",				"Type",				(void *)gps_type,					CFGSTRING,		"Generic"					},
+	{	"GPS",				"InitialBaudRate",	(void *)&initial_baud,				CFGINTEGER,		"9600"						},
+	{	"GPS",				"FinalBaudRate",	(void *)&final_baud,				CFGINTEGER,		"115200"					},
+	{	"GPS",				"FixRate",			(void *)&fix_rate,					CFGINTEGER,		"5"							},
+	{	"Barometer",		"Enable",			(void *)&baro_enable,				CFGINTEGER,		"1"							},
+	{	"Barometer",		"Type",				(void *)baro_type,					CFGSTRING,		"BME280"					},
+	{	"Barometer",		"MeasurementRate",	(void *)&baro_rate,					CFGINTEGER,		"100"						},
+	{	"Accelerometer",	"Enable",			(void *)&acc_enable,				CFGINTEGER,		"1"							},
+	{	"Accelerometer",	"Type",				(void *)acc_type,					CFGSTRING,		"MPU9250"					},
+	{	"Accelerometer",	"MeasurementRate",	(void *)&acc_rate,					CFGINTEGER,		"200"						},
+	{	"Gyro",				"Enable",			(void *)&gyro_enable,				CFGINTEGER,		"1"							},
+	{	"Gyro",				"Type",				(void *)gyro_type,					CFGSTRING,		"MPU9250"					},
+	{	"Gyro",				"MeasurementRate",	(void *)&gyro_rate,					CFGINTEGER,		"200"						},
+	{	"Logging",			"Level",			(void *)&log_level,					CFGINTEGER,		"1"							},
+	{	"",					"",					0,									0,				""							}
+};
 
-
-
-
-
-#if 0
 void printErrorMessage(uint8_t e,bool eol=true)
 {
 	switch(e)
@@ -36,19 +100,156 @@ void printErrorMessage(uint8_t e,bool eol=true)
 	if(eol)
     	Serial.println();
 }
-#endif
 
-void ReadConfigFile(void)
+int ReadConfigFileSDCard(void)
 {
 	const size_t bufferLen=64;
 	char buffer[bufferLen];
 	const char *filename="/tracker.ini";
-	
-	
 
+	IniFile ini(filename);
+		
+	if(!ini.open())
+	{
+		Serial.print("Ini file ");	Serial.print(filename);		Serial.println(" does not exist");
+		
+		// Cannot do anything else
+		return(1);
+	}
+	
+	Serial.println("Ini file exists");
+	
+	// Check the file is valid. This can be used to warn if any lines
+	// are longer than the buffer.
+	
+	if(!ini.validate(buffer, bufferLen))
+	{
+		Serial.print("ini file ");	Serial.print(ini.getFilename());	Serial.print(" not valid: ");	printErrorMessage(ini.getError());
+		
+		// Cannot do anything else
+		return(1);
+	}
 }
 
-void UseConfigDefaults(void)
+int ReadConfigFileSPIFFS(void)
+{
+	const size_t bufferLen=64;
+	char buffer[bufferLen];
+	const char *filename="/tracker.ini";
+
+	SPIFFSIniFile ini(filename);
+		
+	if(!ini.open())
+	{
+		Serial.print("Ini file ");	Serial.print(filename);		Serial.println(" does not exist");
+			
+		// Cannot do anything else
+		return(1);
+	}
+	
+	Serial.println("Ini file exists");
+	
+	// Check the file is valid. This can be used to warn if any lines
+	// are longer than the buffer.
+	
+	if(!ini.validate(buffer,bufferLen))
+	{
+		Serial.print("ini file ");	Serial.print(ini.getFilename());	Serial.print(" not valid: ");	printErrorMessage(ini.getError());
+		
+		// Cannot do anything else
+		return(1);
+	}
+	
+	int cnt=0;
+	int values_used=0;
+	while(1)
+	{
+		if(		strlen(config[cnt].section)==0
+			&&	strlen(config[cnt].tag)==0		)
+		{
+			break;
+		}
+		
+#if DEBUGCONFIG
+		Serial.print("Looking for Tag \"");		Serial.print(config[cnt].tag);	Serial.print("\" in Section \"");	Serial.print(config[cnt].section);	Serial.print("\"");
+#endif
+		
+		if(ini.getValue(config[cnt].section,config[cnt].tag,buffer,sizeof(buffer)))
+		{
+#if DEBUGCONFIG
+			Serial.print("\t-\tvalue = ");			Serial.println(buffer);
+#endif
+		}
+		else
+		{
+#if DEBUGCONFIG
+			Serial.println("\t-\tnot found, subsituting the default value");
+#endif
+			strcpy(buffer,config[cnt].defaultvalue);
+		}
+		
+		if(config[cnt].variable!=NULL)
+		{
+			if(config[cnt].type==CFGSTRING)
+			{
+				strcpy((char *)config[cnt].variable,buffer);
+			}
+			else if(config[cnt].type==CFGIPADDRESS)	
+			{
+				IPAddress temp;
+				temp.fromString(buffer);
+				*((IPAddress *)config[cnt].variable)=temp;
+			}
+			else if(config[cnt].type==CFGINTEGER)	{	*((int *)config[cnt].variable)=atoi(buffer);				}
+			else if(config[cnt].type==CFGFLOAT)		{	*((double *)config[cnt].variable)=atof(buffer);				}
+			else									{	Serial.println("Unknown data type requested ...");			}
+		}
+		
+		cnt++;
+	}
+	
+	Serial.println("Config file read ...");
+	
+	return(0);
+}
+
+void ReadConfigFile(void)
+{
+	int sdcard_read_error=0;
+	int spiffs_read_error=0;
+	
+	if(sdcard_enable)
+	{
+		Serial.println("Attempting to read the config from an SD card");
+		sdcard_read_error=ReadConfigFileSDCard();
+	}	
+	else
+		sdcard_read_error=1;
+	
+	if(sdcard_read_error)
+	{
+		Serial.println("Reading the config from an SD card failed ...");
+
+		if(spiffs_enable)
+		{
+			Serial.println("Attempting to read the config from SPI Flash");
+			spiffs_read_error=ReadConfigFileSPIFFS();
+			
+			if(spiffs_read_error)
+				Serial.println("Reading the config from SPI Flash failed ...");
+		}
+		
+		if(sdcard_read_error&&spiffs_read_error)
+		{
+			Serial.println("Using the default config values");
+			SetDefaultConfigValues();
+		}
+			
+	}
+}
+
+void SetDefaultConfigValues(void)
 {
   
 }
+
