@@ -3,6 +3,7 @@
   
 #include "Accelerometer.h"
 #include "Barometer.h"
+#include "Crypto.h"
 #include "Gyro.h"
 #include "GPS.h"
 #include "LoRaModule.h"
@@ -38,6 +39,8 @@ typedef struct
 
 configvalue_t config[]={
 	{	"Tracker",			"Autostart",		(void *)&lora_constant_transmit,	CFGINTEGER,		"0"							},
+	{	"Crypto",			"Enable",			(void *)&crypto_enable,				CFGINTEGER,		"1"							},
+	{	"Crypto",			"Key",				(void *)crypto_key_hex,				CFGSTRING,		""							},
 	{	"WiFi",				"Enable",			(void *)&wifi_enable,				CFGINTEGER,		"1"							},
 	{	"WiFi",				"SSID",				(void *)ssid,						CFGSTRING,		"MOLEY"						},
 	{	"WiFi",				"Password",			(void *)password,					CFGSTRING,		"sausageeggchipsandbeans"	},
@@ -182,9 +185,7 @@ int ReadConfigFileSPIFFS(void)
 		}
 		else
 		{
-#if DEBUGCONFIG
-			Serial.println("\t-\tnot found, subsituting the default value");
-#endif
+			Serial.print(" Tag \"");		Serial.print(config[cnt].tag);	Serial.print("\" in Section \"");	Serial.print(config[cnt].section);	Serial.print("\"\t-\tnot found, subsituting the default value");
 			strcpy(buffer,config[cnt].defaultvalue);
 		}
 		

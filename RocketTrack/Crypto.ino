@@ -2,10 +2,34 @@
 #include <Crypto.h>
 #include <AES.h>
 
+int crypto_enable=1;
+
+AES128 aes128;
+AES192 aes192;
 AES256 aes256;
+
 BlockCipher *cipher=&aes256;
 
 uint8_t crypto_key[32];
+
+char crypto_key_hex[65];
+
+void HexToUint8(char *hex,uint8_t *binary)
+{
+	int cnt;
+	for(cnt=0;cnt<strlen(hex);cnt+=2)
+	{
+		binary[cnt/2]=0;
+		
+		if(	(hex[cnt]>='0')&&(hex[cnt]<='9')	)	binary[cnt/2]+=16*(hex[cnt]-'0');
+		if(	(hex[cnt]>='a')&&(hex[cnt]<='f')	)	binary[cnt/2]+=16*(hex[cnt]-'a'+10);
+		if(	(hex[cnt]>='A')&&(hex[cnt]<='F')	)	binary[cnt/2]+=16*(hex[cnt]-'A'+10);
+		
+		if(	(hex[cnt+1]>='0')&&(hex[cnt]<='9')	)	binary[cnt/2]+=hex[cnt]-'0';
+		if(	(hex[cnt+1]>='a')&&(hex[cnt]<='f')	)	binary[cnt/2]+=hex[cnt]-'a'+10;
+		if(	(hex[cnt+1]>='A')&&(hex[cnt]<='F')	)	binary[cnt/2]+=hex[cnt]-'A'+10;
+	}
+}
 
 int SetupCrypto(void)
 {
@@ -32,24 +56,58 @@ int SetupCrypto(void)
 	
 	Serial.print("Crypto checked out OK\r\n");
 	
+	Serial.println("Setting up crypto from config file");
+	
+	if(strlen(crypto_key_hex)==0)			{	Serial.println("Warning: no crypto selected!");		cipher=NULL;		}
+	else if(strlen(crypto_key_hex)==32)		{	Serial.println("Selected AES128 mode");				cipher=&aes128;		}
+	else if(strlen(crypto_key_hex)==48)		{	Serial.println("Selected AES192 mode");				cipher=&aes192;		}
+	else if(strlen(crypto_key_hex)==64)		{	Serial.println("Selected AES256 mode");				cipher=&aes256;		}
+	else
+	{
+		Serial.println("Invalid crypto settings detected!");
+		return(1);
+	}
+	
+	HexToUint8(crypto_key_hex,crypto_key);
+	
 	return(0);
 }
 
 void EncryptPacket(uint8_t *packet)
 {
-	uint8_t pt[16];
-	memcpy(pt,packet,16);
-	crypto_feed_watchdog();
-	cipher->setKey(crypto_key,cipher->keySize());
-	cipher->encryptBlock(packet,pt);
+	if(		!crypto_enable
+		||	(cipher==NULL)	)
+	{
+		Serial.println("Warning: crypto disabled");
+		return;
+	}
+	else
+	{
+		uint8_t pt[16];
+		memcpy(pt,packet,16);
+		memset(packet,0,16);
+		crypto_feed_watchdog();
+		cipher->setKey(crypto_key,cipher->keySize());
+		cipher->encryptBlock(packet,pt);
+	}
 }
 
 void DecryptPacket(uint8_t *packet)
 {
-	uint8_t ct[16];
-	memcpy(ct,packet,16);
-	crypto_feed_watchdog();
-	cipher->setKey(crypto_key,cipher->keySize());
-	cipher->decryptBlock(packet,ct);
+	if(		!crypto_enable
+		||	(cipher==NULL)	)
+	{
+		Serial.println("Warning: crypto disabled");
+		return;
+	}
+	else
+	{
+		uint8_t ct[16];
+		memcpy(ct,packet,16);
+		memset(packet,0,16);
+		crypto_feed_watchdog();
+		cipher->setKey(crypto_key,cipher->keySize());
+		cipher->decryptBlock(packet,ct);
+	}
 }
 
