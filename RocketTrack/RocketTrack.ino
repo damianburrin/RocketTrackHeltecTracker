@@ -3,17 +3,11 @@
 
 to be done
 
--	sensor enables
-
 -	logging format
 
 -	wire up and integrate sd card
 
 -	wire up sensors
-
--	test ap mode
-
--	transmit auto start
 
 -	check low power
 
@@ -37,20 +31,21 @@ to be done
 
 #include <LoRa.h>
 
-//#include "FS.h"
-//#include "SD.h"
+#include <SPI.h>
+#include <Wire.h>
 
-#include "SPI.h"
-
+#include "Accelerometer.h"
+#include "Barometer.h"
+#include "Beeper.h"
 #include "ConfigFile.h"
+#include "Gyro.h"
+#include "Leds.h"
+#include "Neopixels.h"
+#include "PressureSensor.h"
 #include "SDCard.h"
 #include "SpiffsSupport.h"
-#include "PressureSensor.h"
-#include "Neopixels.h"
-#include "Leds.h"
-#include "Beeper.h"
-#include "WiFiSupport.h"
 #include "Webserver.h"
+#include "WiFiSupport.h"
 
 // CONFIGURATION SECTION.
 
@@ -98,10 +93,15 @@ void setup()
 
 #ifdef ARDUINO_ARCH_ESP32
 	if(SetupWiFi())				{	Serial.println("WiFi connection failed, disabling ...");			wifi_enable=0;			}
-	if(SetupWebServer())		{	Serial.print("Web Server Setup failed, disabling ...\r\n");			webserver_enable=0;		}
+	if(SetupWebServer())		{	Serial.println("Web Server Setup failed, disabling ...");			webserver_enable=0;		}
 #else
 	wifi_enable=0;
 	webserver_enable=0;
+#endif
+#if 1
+	if(SetupBarometer())		{	Serial.println("Barometer setup failed, disabling ...");			baro_enable=0;			}
+	if(SetupAccelerometer())	{	Serial.println("Accelerometer setup failed, disabling ...");		acc_enable=0;			}
+	if(SetupGyro())				{	Serial.println("Gyro setup failed, disabling ...");					gyro_enable=0;			}
 #endif
 #if 1
 	// disabled while i'm messing around with the web page

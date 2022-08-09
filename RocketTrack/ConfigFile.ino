@@ -4,11 +4,12 @@
 #include "Accelerometer.h"
 #include "Barometer.h"
 #include "Crypto.h"
-#include "Gyro.h"
-#include "GPS.h"
-#include "LoRaModule.h"
 #include "FlightEvents.h"
+#include "GPS.h"
+#include "Gyro.h"
 #include "Logging.h"
+#include "LoRaModule.h"
+#include "Magnetometer.h"
 #include "Webserver.h"
 
 #include <IniFile.h>
@@ -79,6 +80,9 @@ configvalue_t config[]={
 	{	"Gyro",				"Enable",			(void *)&gyro_enable,				CFGINTEGER,		"1"							},
 	{	"Gyro",				"Type",				(void *)gyro_type,					CFGSTRING,		"MPU9250"					},
 	{	"Gyro",				"MeasurementRate",	(void *)&gyro_rate,					CFGINTEGER,		"200"						},
+	{	"Magnetometer",		"Enable",			(void *)&mag_enable,				CFGINTEGER,		"1"							},
+	{	"Magnetometer",		"Type",				(void *)mag_type,					CFGSTRING,		"MPU9250"					},
+	{	"Magnetometer",		"MeasurementRate",	(void *)&mag_rate,					CFGINTEGER,		"200"						},
 	{	"Logging",			"Level",			(void *)&log_level,					CFGINTEGER,		"1"							},
 	{	"",					"",					0,									0,				""							}
 };
