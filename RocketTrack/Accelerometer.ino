@@ -7,6 +7,7 @@ int acc_rate=200;
 
 int SetupAccelerometer(void)
 {
+  
 
 }
 
@@ -14,4 +15,3 @@ void PollAccelerometer(void)
 {
 
 }
-

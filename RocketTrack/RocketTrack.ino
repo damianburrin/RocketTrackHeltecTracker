@@ -34,16 +34,20 @@ to be done
 #include <SPI.h>
 #include <Wire.h>
 
+// To be included only in main(), .ino with setup() to avoid `Multiple Definitions` Linker Error
+//#include "ESP32TimerInterrupt.h"
+
 #include "Accelerometer.h"
 #include "Barometer.h"
 #include "Beeper.h"
 #include "ConfigFile.h"
+#include "Display.h"
 #include "Gyro.h"
 #include "Leds.h"
 #include "Neopixels.h"
-#include "PressureSensor.h"
 #include "SDCard.h"
 #include "SpiffsSupport.h"
+#include "Timers.h"
 #include "Webserver.h"
 #include "WiFiSupport.h"
 
@@ -77,50 +81,102 @@ void setup()
 	SPI.begin();
 	Wire.begin();
 #endif
+
+	SetupDisplay();
 	
+#if 1
+	while(1)
+	{
+		byte error, address;
+		int nDevices;
+		
+		Serial.println("Scanning...");
+		
+		nDevices = 0;
+		for(address = 1; address < 127; address++ ) 
+		{
+			// The i2c_scanner uses the return value of
+			// the Write.endTransmisstion to see if
+			// a device did acknowledge to the address.
+			Wire.beginTransmission(address);
+			error = Wire.endTransmission();
+			
+			if (error == 0)
+			{
+				Serial.print("I2C device found at address 0x");
+				if (address<16) 
+					Serial.print("0");
+				Serial.print(address,HEX);
+				Serial.println("  !");
+
+				nDevices++;
+			}
+			else if (error==4) 
+			{
+				Serial.print("Unknown error at address 0x");
+				if (address<16) 
+					Serial.print("0");
+				Serial.println(address,HEX);
+			}    
+		}
+		
+		if (nDevices == 0)
+			Serial.println("No I2C devices found\n");
+		else
+			Serial.println("done\n");
+		
+		delay(5000);           // wait 5 seconds for next scan
+	}
+
+	//	I2C device found at address 0x34  !		// AXP192 PMIC
+	//	I2C device found at address 0x3C  !		// OLED Display
+	//	I2C device found at address 0x68  !		// MPU6050 Accelerometer/Magnetometer/Gyro
+	//	I2C device found at address 0x76  !		// BME280 pressure sensor  
+#endif
+  
 	// SD card is optional but if present, modes of operation are configured
 	// from a file rather than just compiled-in defaults.  It will also use
 	// a more elaborate web page too
 	
-	if(SetupSDCard())			{	Serial.print("SD Card Setup failed, disabling ...\r\n");			sdcard_enable=0;		}
-	if(SetupSPIFFS())			{	Serial.print("SPIFFS Setup failed, disabling ...\r\n");				spiffs_enable=0;		}
+	if(SetupSDCard())			{	Serial.println("SD Card Setup failed, disabling ...\r\n");					sdcard_enable=0;		}
+	if(SetupSPIFFS())			{	Serial.println("SPIFFS Setup failed, disabling ...\r\n");					spiffs_enable=0;		}
 	
 	ReadConfigFile();
 	
 	// mandatory peripherals
 	
-	if(SetupPMIC())				{	Serial.print("PMIC Setup failed, halting ...\r\n");					while(1);				}
+	if(SetupPMIC())				{	Serial.println("PMIC Setup failed, halting ...\r\n");						while(1);				}
 
 #ifdef ARDUINO_ARCH_ESP32
-	if(SetupWiFi())				{	Serial.println("WiFi connection failed, disabling ...");			wifi_enable=0;			}
-	if(SetupWebServer())		{	Serial.println("Web Server Setup failed, disabling ...");			webserver_enable=0;		}
+	if(SetupWiFi())				{	Serial.println("WiFi connection failed, disabling ...");					wifi_enable=0;			}
+	if(SetupWebServer())		{	Serial.println("Web Server Setup failed, disabling ...");					webserver_enable=0;		}
 #else
 	wifi_enable=0;
 	webserver_enable=0;
 #endif
 #if 1
-	if(SetupBarometer())		{	Serial.println("Barometer setup failed, disabling ...");			baro_enable=0;			}
-	if(SetupAccelerometer())	{	Serial.println("Accelerometer setup failed, disabling ...");		acc_enable=0;			}
-	if(SetupGyro())				{	Serial.println("Gyro setup failed, disabling ...");					gyro_enable=0;			}
+	if(SetupBarometer())		{	Serial.println("Barometer setup failed, disabling ...");					baro_enable=0;			}
+	if(SetupAccelerometer())	{	Serial.println("Accelerometer setup failed, disabling ...");				acc_enable=0;			}
+	if(SetupGyro())				{	Serial.println("Gyro setup failed, disabling ...");							gyro_enable=0;			}
 #endif
 #if 1
 	// disabled while i'm messing around with the web page
-	if(SetupLoRa())				{	Serial.print("LoRa Setup failed, halting ...\r\n");					while(1);				}
-	if(SetupGPS())				{	Serial.print("GPS Setup failed, halting ...\r\n");					while(1);				}
-	if(SetupCrypto())			{	Serial.print("Crypto Setup failed, halting ...\r\n");				while(1);				}
-	if(SetupScheduler())		{	Serial.print("Scheduler Setup failed, halting ...\r\n");			while(1);				}
+	if(SetupLoRa())				{	Serial.println("LoRa Setup failed, halting ...\r\n");						while(1);				}
+	if(SetupGPS())				{	Serial.println("GPS Setup failed, halting ...\r\n");						while(1);				}
+	if(SetupCrypto())			{	Serial.println("Crypto Setup failed, halting ...\r\n");						while(1);				}
+	if(SetupScheduler())		{	Serial.println("Scheduler Setup failed, halting ...\r\n");					while(1);				}
 
 	// optional peripherals
-	if(SetupLEDs())				{	Serial.print("LED Setup failed, halting ...\r\n");					while(1);				}
+	if(SetupLEDs())				{	Serial.println("LED Setup failed, halting ...\r\n");						while(1);				}
 #endif
 #if 0
 	// optional peripherals
 	
-	if(SetupBeeper())			{	Serial.print("Beeper Setup failed, disabling ...\r\n");				beeper_enable=false;	}
-	if(SetupNeopixels())		{	Serial.print("Neopixels Setup failed, disabling ...\r\n");			neopixels_enable=false;	}
+	if(SetupBeeper())			{	Serial.println("Beeper Setup failed, disabling ...\r\n");					beeper_enable=0;		}
+	if(SetupNeopixels())		{	Serial.println("Neopixels Setup failed, disabling ...\r\n");				neopixels_enable=0;		}
 #endif
 #if 0
-	if(SetupPressureSensor())	{	Serial.print("Pressure Sensor Setup failed, disabling ...\r\n");	psensor_enable=false;	}
+	if(SetupTimers())			{	Serial.println("Timer Setup failed, falling back to software timing ...");	timer_enable=0;			}
 #endif
 }
 
@@ -199,3 +255,10 @@ void ProcessCommand(uint8_t *cmd,uint16_t cmdptr)
 	else	{	Serial.println("?");	}
 }
 
+bool IRAM_ATTR TinerHandler0(void *timerNo)
+{
+
+
+
+	return(true);
+}
