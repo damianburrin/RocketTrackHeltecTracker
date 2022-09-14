@@ -34,9 +34,9 @@ int SetupDisplay(void)
 	
 	display.clearDisplay();
 	
-	display.setTextSize(2);      // Normal 1:1 pixel scale
-	display.setTextColor(SSD1306_WHITE); // Draw white text
-	display.cp437(true);         // Use full 256 char 'Code Page 437' font
+	display.setTextSize(2);					// Normal 1:1 pixel scale
+	display.setTextColor(SSD1306_WHITE);	// Draw white text
+	display.cp437(true);					// Use full 256 char 'Code Page 437' font
 	
 	display.setCursor(32,16);
 	display.write("Rocket");
@@ -50,6 +50,14 @@ int SetupDisplay(void)
 
 void PollDisplay(void)
 {
+	
+	
+	
+	
+	
+	
+	
+	
 	
 }
 

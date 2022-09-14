@@ -84,7 +84,7 @@ void setup()
 
 	SetupDisplay();
 	
-#if 1
+#if 0
 	while(1)
 	{
 		byte error, address;
@@ -155,11 +155,11 @@ void setup()
 	webserver_enable=0;
 #endif
 #if 1
-	if(SetupBarometer())		{	Serial.println("Barometer setup failed, disabling ...");					baro_enable=0;			}
 	if(SetupAccelerometer())	{	Serial.println("Accelerometer setup failed, disabling ...");				acc_enable=0;			}
 	if(SetupGyro())				{	Serial.println("Gyro setup failed, disabling ...");							gyro_enable=0;			}
+	if(SetupBarometer())		{	Serial.println("Barometer setup failed, disabling ...");					baro_enable=0;			}
 #endif
-#if 1
+#if 0
 	// disabled while i'm messing around with the web page
 	if(SetupLoRa())				{	Serial.println("LoRa Setup failed, halting ...\r\n");						while(1);				}
 	if(SetupGPS())				{	Serial.println("GPS Setup failed, halting ...\r\n");						while(1);				}
@@ -190,6 +190,10 @@ void loop()
 	PollLoRa();
 	PollSerial();
 	PollLEDs();
+
+	PollAccelerometer();
+	PollGyro();
+	PollBarometer();
 }
 
 void PollSerial(void)
