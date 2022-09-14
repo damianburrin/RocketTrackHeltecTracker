@@ -190,9 +190,9 @@ void loop()
 	PollLoRa();
 	PollSerial();
 	PollLEDs();
-
-	PollAccelerometer();
-	PollGyro();
+	
+//	PollAccelerometer();
+//	PollGyro();
 	PollBarometer();
 }
 
