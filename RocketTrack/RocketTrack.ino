@@ -191,9 +191,11 @@ void loop()
 	PollSerial();
 	PollLEDs();
 	
-//	PollAccelerometer();
-//	PollGyro();
+	PollAccelerometer();
+	PollGyro();
 	PollBarometer();
+	
+	delay(50);
 }
 
 void PollSerial(void)

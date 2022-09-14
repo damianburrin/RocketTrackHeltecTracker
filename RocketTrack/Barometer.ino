@@ -32,21 +32,10 @@ void PollBarometer(void)
 {
 	if(baro_enable)
 	{
-		Serial.print("Temperature = ");
-		Serial.print(bme.readTemperature());
-		Serial.println(" *C");
-		
-		Serial.print("Pressure = ");
-		Serial.print(bme.readPressure() / 100.0F);
-		Serial.println(" hPa");
-		
-		Serial.print("Approx. Altitude = ");
-		Serial.print(bme.readAltitude(SEALEVELPRESSURE_HPA));
-		Serial.println(" m");
-		
-		Serial.print("Humidity = ");
-		Serial.print(bme.readHumidity());
-		Serial.println(" %");
+		Serial.print("Temperature = ");			Serial.print(bme.readTemperature());					Serial.print(" *C\t");
+		Serial.print("Pressure = ");			Serial.print(bme.readPressure()/100.0F);				Serial.print(" hPa\t");
+		Serial.print("Approx. Altitude = ");	Serial.print(bme.readAltitude(SEALEVELPRESSURE_HPA));	Serial.print(" m\t");
+		Serial.print("Humidity = ");			Serial.print(bme.readHumidity());						Serial.print(" %\t");
 		
 		Serial.println();
 	}
