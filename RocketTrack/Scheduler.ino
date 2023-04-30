@@ -1,6 +1,4 @@
 
-#define USER_BUTTON			38
-
 uint32_t next_transmit=0;
 
 int SetupScheduler(void)
@@ -60,16 +58,12 @@ void PollScheduler(void)
 			if(strcmp(lora_mode,"Long Range")==0)
 			{
 				next_transmit=millis()+lr_period;
-				LedPattern=0xf0f0f0f0;
-				LedRepeatCount=1;
-				LedBitCount=0;										
+				led_control(0xf0f0f0f0,1);
 			}
 			else
 			{
 				next_transmit=millis()+hr_period;
-				LedPattern=0xaaaaaaaa;
-				LedRepeatCount=1;
-				LedBitCount=0;					
+				led_control(0xaaaaaaaa,1);
 			}
 			
 			Serial.printf("millis() = %d\r\n",millis());

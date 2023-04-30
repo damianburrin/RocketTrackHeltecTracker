@@ -1,5 +1,5 @@
 
-#define DEBUGCONFIG 0
+#define DEBUGCONFIG 1
   
 #include "Accelerometer.h"
 #include "Barometer.h"
@@ -129,7 +129,7 @@ int ReadConfigFileSDCard(void)
 	// Check the file is valid. This can be used to warn if any lines
 	// are longer than the buffer.
 	
-	if(!ini.validate(buffer, bufferLen))
+	if(!ini.validate(buffer,bufferLen))
 	{
 		Serial.print("ini file ");	Serial.print(ini.getFilename());	Serial.print(" not valid: ");	printErrorMessage(ini.getError());
 		
@@ -154,7 +154,7 @@ int ReadConfigFileSPIFFS(void)
 		return(1);
 	}
 	
-	Serial.println("Ini file exists");
+	Serial.println("\tIni file exists");
 	
 	// Check the file is valid. This can be used to warn if any lines
 	// are longer than the buffer.
@@ -166,6 +166,8 @@ int ReadConfigFileSPIFFS(void)
 		// Cannot do anything else
 		return(1);
 	}
+
+	Serial.print("ini file is valid, starting to read the parameters\r\n");
 	
 	int cnt=0;
 	int values_used=0;

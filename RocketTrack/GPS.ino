@@ -11,6 +11,7 @@ int fix_rate;
 #define DEBUG 1
 
 #define GPS_PASSTHROUGH 0
+#define BINARY_GPS		1
 
 #define MAX_CHANNELS 50
 
@@ -188,6 +189,46 @@ void Set5Hz_Fix_Rate()
 	SendUBX(cmd,sizeof(cmd));
 }
 
+
+#if 1
+int SetupGPS(void)
+{
+	Serial.println("Open GPS port");
+	
+	// this could do with some autobauding
+	
+	
+	Serial1.begin(9600,SERIAL_8N1,34,12);	// Pins for T-Beam v0.8 (3 push buttons) and up
+
+	// this also assumes we're using a u-Blox receiver, not always true
+
+#if BINARY_GPS	
+	#warning "this only support a u-Blox GPS receiver"
+
+#if 1
+	// turn off all NMEA output	
+	SetMessageRate(0xf0,0x00,0x00);	// GPGGA
+	SetMessageRate(0xf0,0x01,0x00);	// GPGLL
+	SetMessageRate(0xf0,0x02,0x00);	// GPGSA
+	SetMessageRate(0xf0,0x03,0x00);	// GPGSV
+	SetMessageRate(0xf0,0x04,0x00);	// GPRMC
+	SetMessageRate(0xf0,0x05,0x00);	// GPVTG
+#endif	
+#if 1
+	SetMessageRate(0x01,0x02,0x01);	// NAV-POSLLH every fix
+	SetMessageRate(0x01,0x03,0x05);	// NAV-STATUS every fifth fix
+	SetMessageRate(0x01,0x30,0x05);	// NAV-SVINFO every fifth fix
+	Set5Hz_Fix_Rate();
+#else
+	SetMessageRate(0x01,0x02,0x01);	// NAV-POSLLH every fix
+	SetMessageRate(0x01,0x03,0x01);	// NAV-STATUS every fix
+	SetMessageRate(0x01,0x30,0x01);	// NAV-SVINFO every fix
+#endif
+#endif
+	
+	return(0);
+}
+#else
 int SetupGPS(void)
 {
 #if 0
@@ -199,8 +240,16 @@ int SetupGPS(void)
 #if (DEBUG>0)
 	Serial.println("Open GPS port");
 #endif
+
+	Serial1.begin(9600,SERIAL_8N1,34,12);	// Pins for T-Beam v0.8 (3 push buttons) and up
 	
-#if 1
+	
+	
+	
+	
+	
+	
+#if 0
 	// the gps will start at 9600 baud.  we need to change it to 115200, switch a load 
 	// of messages off, enable some ubx messages then change the measurement rate to 
 	// every 200ms
@@ -243,7 +292,7 @@ int SetupGPS(void)
 	SetMessageRate(0xf0,0x05,0x00);	// GPVTG
   #endif	
 	
-  #if 1
+  #if 0
 	SetMessageRate(0x01,0x02,0x01);	// NAV-POSLLH every fix
 	SetMessageRate(0x01,0x03,0x01);	// NAV-STATUS every fix
 	SetMessageRate(0x01,0x30,0x01);	// NAV-SVINFO every fix
@@ -286,6 +335,7 @@ int SetupGPS(void)
 	
 	return(0);
 }
+#endif
 
 void PollGPS(void)
 {

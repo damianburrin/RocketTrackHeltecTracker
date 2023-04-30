@@ -24,9 +24,14 @@ void PollLEDs(void)
 	{
 		if(millis()>=NextLEDs)
 		{
+#ifdef ARDUINO_TBEAM_USE_RADIO_SX1262
 			if(LedPattern&0x8000000)	ControlLED(AXP20X_LED_LOW_LEVEL);
 			else						ControlLED(AXP20X_LED_OFF);
-			
+#else
+			if(LedPattern&0x8000000)	digitalWrite(LED_PIN,LED_ON);
+			else						digitalWrite(LED_PIN,LED_OFF;
+#endif
+						
 			if(LedRepeatCount>0)
 			{
 				LedPattern=(LedPattern<<1)|(LedPattern>>31);
@@ -84,5 +89,12 @@ int LEDCommandHandler(uint8_t *cmd,uint16_t cmdptr)
 	}
 	
 	return(retval);
+}
+
+void led_control(uint32_t led_pattern,uint16_t led_repeat_count)
+{
+	LedPattern=led_pattern;
+	LedRepeatCount=led_repeat_count;
+	LedBitCount=0;
 }
 

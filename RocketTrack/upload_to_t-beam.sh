@@ -1,12 +1,17 @@
 #!/bin/bash
 
-~/arduino-cli/arduino-cli upload \
-	--port /dev/ttyUSB0 \
-	--verbose \
-	--fqbn esp32:esp32:t-beam
+#VERBOSE=--verbose
+BOARD=esp32:esp32:t-beam
+PORT=/dev/ttyUSB*
 
-python "/home/chris/.arduino15/packages/esp32/tools/esptool_py/3.0.0/esptool.py" \
+arduino-cli compile --upload ${VERBOSE} --fqbn ${BOARD} --port ${PORT}
+
+rm data/*~ 2>/dev/null
+
+mkspiffs -c data -b 4096 -p 256 -s 0x160000 rockettrack.spiffs.bin
+
+esptool \
 	--chip esp32 \
-	--port /dev/ttyUSB0 \
+	--port ${PORT} \
 	--baud 921600 \
 	write_flash -z 0x290000 rockettrack.spiffs.bin
