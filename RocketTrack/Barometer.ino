@@ -59,3 +59,51 @@ void PollBarometer(void)
 	}
 }
 
+int BarometerCommandHandler(uint8_t *cmd,uint16_t cmdptr)
+{
+	// ignore a single key stroke
+	if(cmdptr<=2)	return(0);
+	
+#if (DEBUG>0)
+	Serial.println((char *)cmd);
+#endif
+	
+	int retval=1;
+	uint8_t cnt;
+	
+	switch(cmd[1]|0x20)
+	{
+		case 'a':	Serial.print("Altitude: ");		Serial.print(bme.readAltitude(SEALEVELPRESSURE_HPA));	Serial.print(" m\r\n");
+					break;
+					
+		case 'p':	Serial.print("Pressure: ");		Serial.print(bme.readPressure()/100.0F);				Serial.print(" hPa\r\n");
+					break;
+
+		case 't':	Serial.print("Temperature: ");	Serial.print(bme.readTemperature());					Serial.print(" *C\r\n");
+					break;
+		
+		case 'h':	Serial.print("Humidity = ");	Serial.print(bme.readHumidity());						Serial.print(" %\r\n");
+					break;
+		
+		case 'r':	Serial.print("Altitude: ");		Serial.print(bme.readAltitude(SEALEVELPRESSURE_HPA));	Serial.print(" m\r\n");
+					Serial.print("Pressure: ");		Serial.print(bme.readPressure()/100.0F);				Serial.print(" hPa\r\n");
+					Serial.print("Temperature: ");	Serial.print(bme.readTemperature());					Serial.print(" *C\r\n");
+					Serial.print("Humidity = ");	Serial.print(bme.readHumidity());						Serial.print(" %\r\n");
+					break;
+		
+		case '?':	Serial.print("Barometer Test Harness\r\n================\r\n\n");
+					Serial.print("a\t-\tRead altitude\r\n");
+					Serial.print("p\t-\tRead pressure\r\n");
+					Serial.print("t\t-\tRead temperature\r\n");
+					Serial.print("h\t-\tRead humidity\r\n");
+					Serial.print("r\t-\tRead all sensors\r\n");
+					Serial.print("?\t-\tShow this menu\r\n");
+					break;
+		
+		default:	retval=0;
+					break;
+	}
+	
+	return(retval);
+}
+

@@ -65,7 +65,7 @@ void OnePPS_adjust(void)
 	
 	rect[cnt]=slippage;
 
-#if 1
+#if 0
 	Serial.print(slippage);
 	Serial.print("\t\t");
 #endif
@@ -81,7 +81,7 @@ void OnePPS_adjust(void)
 	if(cnt>=NUMPTS)
 		cnt=0;
 
-#if 1
+#if 0
 	Serial.print(micros_offset);
 	Serial.print("\t\t");
 #endif
@@ -99,7 +99,9 @@ void OnePPS_adjust(void)
 
 	last_millis=ticktime_millis;
 
+#if 0
 	Serial.print("tick\r\n");
+#endif
 }
 
 unsigned long int millis_1pps(void)

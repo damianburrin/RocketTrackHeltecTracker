@@ -153,10 +153,11 @@ void loop()
 	PollLoRa();
 	PollLEDs();
 #endif
-
+#if 0
 	PollAccelerometer();
 	PollGyro();
 	PollBarometer();
+#endif
 }
 
 void PollSerial(void)
@@ -190,20 +191,23 @@ void ProcessCommand(uint8_t *cmd,uint16_t cmdptr)
 	
 	switch(cmd[0]|0x20)
 	{
-		case 'g':	OK=GPSCommandHandler(cmd,cmdptr);			break;
-		case 'l':	OK=LORACommandHandler(cmd,cmdptr);			break;
-		case 'p':	OK=PMICCommandHandler(cmd,cmdptr);			break;
-		case 'e':	OK=LEDCommandHandler(cmd,cmdptr);			break;
-		case 'o':	OK=LongRangeCommandHandler(cmd,cmdptr);		break;
-		case 'h':	OK=HighRateCommandHandler(cmd,cmdptr);		break;
-		case 'n':	OK=NeopixelCommandHandler(cmd,cmdptr);		break;
-		case 'b':	OK=BeeperCommandHandler(cmd,cmdptr);		break;
+		case 'a':	OK=AccelerometerCommandHandler(cmd,cmdptr);		break;
+		case 'b':	OK=BarometerCommandHandler(cmd,cmdptr);			break;
+		case 'y':	OK=GyroCommandHandler(cmd,cmdptr);				break;
+		case 'g':	OK=GPSCommandHandler(cmd,cmdptr);				break;
+		case 'l':	OK=LORACommandHandler(cmd,cmdptr);				break;
+		case 'p':	OK=PMICCommandHandler(cmd,cmdptr);				break;
+		case 'e':	OK=LEDCommandHandler(cmd,cmdptr);				break;
+		case 'o':	OK=LongRangeCommandHandler(cmd,cmdptr);			break;
+		case 'h':	OK=HighRateCommandHandler(cmd,cmdptr);			break;
+		case 'n':	OK=NeopixelCommandHandler(cmd,cmdptr);			break;
+		case 'z':	OK=BeeperCommandHandler(cmd,cmdptr);			break;
 		
 		case 'x':	OK=1;
 					i2c_bus_scanner();
 					break;
 		
-		case '?':	Serial.print("Hacked Test Harness Menu\r\n=================\r\n\n");
+		case '?':	Serial.print("RocketTrack Test Harness Menu\r\n=================\r\n\n");
 					Serial.print("g\t-\tGPS Commands\r\n");
 					Serial.print("l\t-\tLoRa Commands\r\n");
 					Serial.print("p\t-\tPMIC Commands\r\n");

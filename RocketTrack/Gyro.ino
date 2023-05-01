@@ -67,3 +67,39 @@ void PollGyro(void)
 	}
 }
 
+int GyroCommandHandler(uint8_t *cmd,uint16_t cmdptr)
+{
+	// ignore a single key stroke
+	if(cmdptr<=2)	return(0);
+	
+#if (DEBUG>0)
+	Serial.println((char *)cmd);
+#endif
+	
+	int retval=1;
+	uint8_t cnt;
+	
+	switch(cmd[1]|0x20)
+	{
+		case 'r':	Serial.print("Read gyro:\t");
+					sensors_event_t a,g,temp;
+					mpu.getEvent(&a,&g,&temp);
+										
+					Serial.print("X: ");	Serial.print(g.acceleration.x);	
+					Serial.print(", Y: ");	Serial.print(g.acceleration.y);	
+					Serial.print(", Z: ");	Serial.print(g.acceleration.z);	Serial.print(" degs/s\r\n");
+					
+					break;
+					
+		case '?':	Serial.print("Gyro Test Harness\r\n================\r\n\n");
+					Serial.print("r\t-\tRead sensor\r\n");
+					Serial.print("?\t-\tShow this menu\r\n");
+					break;
+		
+		default:	retval=0;
+					break;
+	}
+	
+	return(retval);
+}
+

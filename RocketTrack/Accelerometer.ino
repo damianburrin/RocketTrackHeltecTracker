@@ -106,3 +106,40 @@ void PollAccelerometer(void)
 		}
 	}
 }
+
+int AccelerometerCommandHandler(uint8_t *cmd,uint16_t cmdptr)
+{
+	// ignore a single key stroke
+	if(cmdptr<=2)	return(0);
+	
+#if (DEBUG>0)
+	Serial.println((char *)cmd);
+#endif
+	
+	int retval=1;
+	uint8_t cnt;
+	
+	switch(cmd[1]|0x20)
+	{
+		case 'r':	Serial.print("Read accelerometer:\t");
+					sensors_event_t a,g,temp;
+					mpu.getEvent(&a,&g,&temp);
+										
+					Serial.print("X: ");	Serial.print(a.acceleration.x);	
+					Serial.print(", Y: ");	Serial.print(a.acceleration.y);	
+					Serial.print(", Z: ");	Serial.print(a.acceleration.z);	Serial.print(" m/s^2\r\n");
+					
+					break;
+					
+		case '?':	Serial.print("Accelerometer Test Harness\r\n================\r\n\n");
+					Serial.print("r\t-\tRead sensor\r\n");
+					Serial.print("?\t-\tShow this menu\r\n");
+					break;
+		
+		default:	retval=0;
+					break;
+	}
+	
+	return(retval);
+}
+

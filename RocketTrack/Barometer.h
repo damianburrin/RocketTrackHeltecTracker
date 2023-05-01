@@ -8,3 +8,5 @@ extern int baro_rate;
 int SetupBarometer(void);
 void PollBarometer(void);
 
+int BarometerCommandHandler(uint8_t *cmd,uint16_t cmdptr);
+
