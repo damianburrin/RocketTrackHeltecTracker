@@ -15,8 +15,6 @@ Adafruit_MPU6050 mpu;
 
 int SetupAccelerometer(void)
 {
-	Serial.print("SetupAccelerometer() entry\r\n");
-
 	if(strstr(acc_type,"None")!=NULL)
 	{
 		Serial.println("No accelerometer configured, disabling");
@@ -65,8 +63,6 @@ int SetupAccelerometer(void)
 		Serial.println("Accelerometer mis-configured, disabling");
 		acc_enable=0;
 	}
-	
-	Serial.print("SetupAccelerometer() exit\r\n");
 	
 	return(0);
 }

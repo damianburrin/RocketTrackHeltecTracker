@@ -8,7 +8,8 @@ to be done
 -	wire up and integrate sd card
 
 -	wire up sensors
-
+		done
+		
 -	check low power
 
 -	flight events (based on baro, not gps altitude, using gps location too)
@@ -16,6 +17,11 @@ to be done
 -	turning off the gps after landing detection 
 	
 -	fsk backup mode if possible
+
+-	using the OLED display for something useful other than just a logo
+
+-	merge in the receiver code from RocketTrackReceiver and have one codebase that can be switched between roles using the config file on the sd card
+
 
 
 
@@ -51,6 +57,9 @@ to be done
 #include "Timers.h"
 #include "Webserver.h"
 #include "WiFiSupport.h"
+
+extern char crypto_key_hex[65];
+extern uint8_t crypto_key[32];
 
 void setup()
 {
@@ -110,25 +119,19 @@ void setup()
 	if(SetupGyro())				{	Serial.println("Gyro setup failed, disabling ...");							gyro_enable=0;			}
 	if(SetupBarometer())		{	Serial.println("Barometer setup failed, disabling ...");					baro_enable=0;			}
 
-#if 0
-	// disabled while i'm messing around with the web page
 	if(SetupLoRa())				{	Serial.println("LoRa Setup failed, halting ...\r\n");						while(1);				}
-#endif
-#if 1
 	if(SetupGPS())				{	Serial.println("GPS Setup failed, halting ...\r\n");						while(1);				}
-#endif
-#ifdef GPS_1PPS
 	SetupOnePPS();
-#endif
-
 	if(SetupCrypto())			{	Serial.println("Crypto Setup failed, halting ...\r\n");						while(1);				}
 
-#if 0
+	Serial.println(crypto_key_hex);
+	DumpHexPacket(crypto_key,32);
+
 	if(SetupScheduler())		{	Serial.println("Scheduler Setup failed, halting ...\r\n");					while(1);				}
 
 	// optional peripherals
-	if(SetupLEDs())				{	Serial.println("LED Setup failed, halting ...\r\n");						while(1);				}
-#endif
+	if(SetupLEDs())				{	Serial.println("LED Setup failed, halting ...\r\n");						leds_enable=0;			}
+
 #if 0
 	// optional peripherals	
 	if(SetupBeeper())			{	Serial.println("Beeper Setup failed, disabling ...\r\n");					beeper_enable=0;		}
@@ -147,12 +150,11 @@ void loop()
 	PollSerial();
 	PollGPS();
 	PollOnePPS();
-	
-#if 0
-	PollScheduler();
 	PollLoRa();
 	PollLEDs();
-#endif
+	PollDisplay();
+	PollScheduler();
+
 #if 0
 	PollAccelerometer();
 	PollGyro();

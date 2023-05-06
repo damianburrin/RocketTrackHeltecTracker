@@ -21,13 +21,13 @@ void HexToUint8(char *hex,uint8_t *binary)
 	{
 		binary[cnt/2]=0;
 		
-		if(	(hex[cnt]>='0')&&(hex[cnt]<='9')	)	binary[cnt/2]+=16*(hex[cnt]-'0');
-		if(	(hex[cnt]>='a')&&(hex[cnt]<='f')	)	binary[cnt/2]+=16*(hex[cnt]-'a'+10);
-		if(	(hex[cnt]>='A')&&(hex[cnt]<='F')	)	binary[cnt/2]+=16*(hex[cnt]-'A'+10);
+		if(	(hex[cnt]>='0')&&(hex[cnt]<='9')		)	binary[cnt/2]+=16*(hex[cnt]-'0');
+		if(	(hex[cnt]>='a')&&(hex[cnt]<='f')		)	binary[cnt/2]+=16*(hex[cnt]-'a'+10);
+		if(	(hex[cnt]>='A')&&(hex[cnt]<='F')		)	binary[cnt/2]+=16*(hex[cnt]-'A'+10);
 		
-		if(	(hex[cnt+1]>='0')&&(hex[cnt]<='9')	)	binary[cnt/2]+=hex[cnt]-'0';
-		if(	(hex[cnt+1]>='a')&&(hex[cnt]<='f')	)	binary[cnt/2]+=hex[cnt]-'a'+10;
-		if(	(hex[cnt+1]>='A')&&(hex[cnt]<='F')	)	binary[cnt/2]+=hex[cnt]-'A'+10;
+		if(	(hex[cnt+1]>='0')&&(hex[cnt+1]<='9')	)	binary[cnt/2]+=hex[cnt+1]-'0';
+		if(	(hex[cnt+1]>='a')&&(hex[cnt+1]<='f')	)	binary[cnt/2]+=hex[cnt+1]-'a'+10;
+		if(	(hex[cnt+1]>='A')&&(hex[cnt+1]<='F')	)	binary[cnt/2]+=hex[cnt+1]-'A'+10;
 	}
 }
 
@@ -49,26 +49,28 @@ int SetupCrypto(void)
 	{
 		if(ct[cnt]!=tv[cnt])
 		{
-			Serial.print("Crypto check FAILED!  Halting ...\r\n");
+			Serial.print("\tCrypto check FAILED!  Halting ...\r\n");
 			return(1);
 		}
 	}
 	
-	Serial.print("Crypto checked out OK\r\n");
+	Serial.print("\tCrypto checked out OK\r\n");
 	
-	Serial.println("Setting up crypto from config file");
+	Serial.println("\tSetting up crypto from config file");
 	
-	if(strlen(crypto_key_hex)==0)			{	Serial.println("Warning: no crypto selected!");		cipher=NULL;		}
-	else if(strlen(crypto_key_hex)==32)		{	Serial.println("Selected AES128 mode");				cipher=&aes128;		}
-	else if(strlen(crypto_key_hex)==48)		{	Serial.println("Selected AES192 mode");				cipher=&aes192;		}
-	else if(strlen(crypto_key_hex)==64)		{	Serial.println("Selected AES256 mode");				cipher=&aes256;		}
+	if(strlen(crypto_key_hex)==0)			{	Serial.println("\tWarning: no crypto selected!");		cipher=NULL;		}
+	else if(strlen(crypto_key_hex)==32)		{	Serial.println("\tSelected AES128 mode");				cipher=&aes128;		}
+	else if(strlen(crypto_key_hex)==48)		{	Serial.println("\tSelected AES192 mode");				cipher=&aes192;		}
+	else if(strlen(crypto_key_hex)==64)		{	Serial.println("\tSelected AES256 mode");				cipher=&aes256;		}
 	else
 	{
-		Serial.println("Invalid crypto settings detected!");
+		Serial.println("\tInvalid crypto settings detected!");
 		return(1);
 	}
 	
 	HexToUint8(crypto_key_hex,crypto_key);
+	
+	cipher->setKey(crypto_key,cipher->keySize());
 	
 	return(0);
 }

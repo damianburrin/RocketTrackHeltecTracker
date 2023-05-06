@@ -1,4 +1,6 @@
 
+#define DEBUG 2
+
 #define LORA_ID 0
 
 // these are global variables to be populated from the last packet received
@@ -19,8 +21,8 @@ void PackPacket(uint8_t *TxPacket,uint16_t *TxPacketLength)
 	static uint16_t packetcounter=0;
 	uint8_t packet[16];
 	
-	double longitude=(double)lon/1e7;
-	double latitude=(double)lat/1e7;
+	double longitude=(double)gps_lon/1e7;
+	double latitude=(double)gps_lat/1e7;
 	double hght=(double)hMSL/1e3;
 	
 	uint32_t packed_longitude=(uint32_t)(longitude*131072.0);
@@ -40,8 +42,8 @@ void PackPacket(uint8_t *TxPacket,uint16_t *TxPacketLength)
 	packet[1]=numsats;
 	packet[1]|=(gpsFix&0x03)<<6;
 	
-	packet[2]=(lon&0x000000ff)>>0;	packet[3]=(lon&0x0000ff00)>>8;	packet[4]=(lon&0x00ff0000)>>16;	packet[5]=(lon&0xff000000)>>24;
-	packet[6]=(lat&0x000000ff)>>0;	packet[7]=(lat&0x0000ff00)>>8;	packet[8]=(lat&0x00ff0000)>>16;	packet[9]=(lat&0xff000000)>>24;
+	packet[2]=(gps_lon&0x000000ff)>>0;	packet[3]=(gps_lon&0x0000ff00)>>8;	packet[4]=(gps_lon&0x00ff0000)>>16;	packet[5]=(gps_lon&0xff000000)>>24;
+	packet[6]=(gps_lat&0x000000ff)>>0;	packet[7]=(gps_lat&0x0000ff00)>>8;	packet[8]=(gps_lat&0x00ff0000)>>16;	packet[9]=(gps_lat&0xff000000)>>24;
 	
 	packet[10]=(packed_height&0x00ff)>>0;
 	packet[11]=(packed_height&0xff00)>>8;
@@ -57,6 +59,10 @@ void PackPacket(uint8_t *TxPacket,uint16_t *TxPacketLength)
 	
 	memcpy(TxPacket,packet,16);
 	*TxPacketLength=16;
+
+#if DEBUG>1
+	DumpHexPacket(TxPacket,*TxPacketLength);
+#endif
 	
 	packetcounter++;
 }
@@ -82,5 +88,14 @@ void UnpackPacket(uint8_t *RxPacket,uint16_t RxPacketLength)
 	beaconvoltage=(float)(RxPacket[13]*20);
 	
 	beaconcount=RxPacket[14]+(RxPacket[15]<<8);
+}
+
+void DumpHexPacket(uint8_t *packet,uint16_t packetlength)
+{
+	int cnt;
+	for(cnt=0;cnt<packetlength;cnt++)
+		Serial.printf("%02x",packet[cnt]);
+	
+	Serial.print("\r\n");
 }
 

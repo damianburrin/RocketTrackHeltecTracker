@@ -17,6 +17,8 @@
 #define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
 #define SCREEN_ADDRESS 0x3c ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 
+#define DISPLAY_UPDATE_PERIOD	1000
+
 Adafruit_SSD1306 display(SCREEN_WIDTH,SCREEN_HEIGHT,&Wire,OLED_RESET);
 
 int SetupDisplay(void)
@@ -28,7 +30,7 @@ int SetupDisplay(void)
 		return(1);
 	}
 	
-	Serial.println(F("SSD1306 configured ..."));
+	Serial.println(F("SSD1306 display configured ..."));
 	
 	display.setRotation(2);
 	
@@ -50,14 +52,98 @@ int SetupDisplay(void)
 
 void PollDisplay(void)
 {
+	static int DisplayState=0;
+	static int LastDisplayChange=0;
 	
-	
-	
-	
-	
-	
-	
-	
-	
+	if(millis()>=(LastDisplayChange+DISPLAY_UPDATE_PERIOD))
+	{
+		display.clearDisplay();
+		
+		// portrait
+		display.setRotation(1);
+		
+//		display.setTextSize(1);
+		
+		// draw white on black if logging is active, inverted otherwise
+		if(sdcard_enable)	display.setTextColor(SSD1306_WHITE);
+		else				display.setTextColor(SSD1306_INVERSE);
+		
+		display.setCursor(0,0);
+		
+		char buffer[32];
+		
+		display.setTextSize(1);
+		
+		sprintf(buffer,"%04d/%02d/%02d\r\n",gps_year,gps_month,gps_day);
+		display.print(buffer);
+		
+		sprintf(buffer,"%02d%02d%02d\r\n",gps_hour,gps_min,gps_sec);
+		display.print(buffer);
+		
+		switch(DisplayState)
+		{
+			case 0 ... 5:	display.setTextSize(1);
+							display.println();
+							display.printf("Lat:\r\n %.6f\r\n",gps_lat/1e7);
+							display.printf("Lon:\r\n %.6f\r\n",gps_lon/1e7);		
+							display.printf("Altitude:\r\n %d m\r\n",gps_height);		
+							
+							break;
+#if 1
+			case 6 ... 7:	display.setTextSize(1);
+							display.print("\r\n# Sats: ");
+							display.println(gps_numSats);
+							
+							break;
+#endif
+#if 0
+			case 8 ... 9:	display.println();
+							display.print("Alt(GPS):\r\n  ");
+							display.print(gps_height);
+							display.println(" m");
+			
+							break;
+							
+			case 10 ... 11:	display.println();
+							display.print("Max(GPS):\r\n  ");
+							display.print(max_gps_height);
+							display.println(" m");
+							
+							break;
+				
+			case 12 ... 13:	display.println();
+							display.print("Alt(Baro):\r\n  ");
+							display.print(baro_height);
+							display.println(" m");
+							
+							break;
+		
+			case 14 ... 15:	display.println();
+							display.print("Max(Baro):\r\n  ");
+							display.print(max_baro_height);
+							display.println(" m");
+							
+							break;
+#endif
+			
+			default:		
+							DisplayState=0;
+							break;
+		}
+		
+		display.setTextSize(3);
+		display.setCursor(0,104);
+		if(gps_numSats<3)		display.println("NF");
+		else if(gps_numSats==3)	display.println("2D");
+		else					display.println("3D");
+			
+		display.display();
+		
+		DisplayState++;
+		if(DisplayState>=8)
+			DisplayState=0;
+		
+		LastDisplayChange=millis();
+	}
 }
 

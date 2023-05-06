@@ -66,7 +66,9 @@ void PollScheduler(void)
 				led_control(0xaaaaaaaa,1);
 			}
 			
+#if 0
 			Serial.printf("millis() = %d\r\n",millis());
+#endif
 		}
 	}
 }

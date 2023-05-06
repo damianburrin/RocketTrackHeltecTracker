@@ -8,8 +8,9 @@
 
 //typedef enum {lmIdle, lmListening, lmSending} tLoRaMode;
 
-bool LoRaTransmitSemaphore=0;
-
+bool LoRaTransmitSemaphore=false;
+bool LoRaTXDoneSemaphore=false;
+int LoRaBurstDuration=0;
 uint32_t TXStartTimeMillis;
 
 // LORA settings
@@ -17,9 +18,6 @@ uint32_t TXStartTimeMillis;
 #define LORA_OFFSET			0         // Frequency to add in kHz to make Tx frequency accurate
 
 // HARDWARE DEFINITION
-#define LORA_NSS			18		// Comment out to disable LoRa code
-#define LORA_RESET			14		// Comment out if not connected
-#define LORA_DIO0			26
 
 double lora_freq=LORA_FREQ;
 double lora_offset=LORA_OFFSET;
@@ -46,34 +44,21 @@ uint16_t TxPacketCounter=0;
 
 uint32_t LastLoRaTX=0;
 
-int now;
-
 int SetupLoRa(void)
 {
-	Serial.println("LoRa Sender");
-
     LoRa.setPins(LORA_NSS,LORA_RESET,LORA_DIO0);
 	LoRa.onTxDone(onTxDone);
 	
-	if(!LoRa.begin(lora_freq))
-	{
-		Serial.println("Starting LoRa failed!");
-		return(1);
-	}
-	else
-	{
-		Serial.println("Started LoRa ok ...");
-		return(0);
-	}
+	if(!LoRa.begin(lora_freq))	{	Serial.println("Starting LoRa module failed!");	return(1);	}
+	else						{	Serial.println("Started LoRa module ok ...");	return(0);	}
 	
 	SetLoRaMode(lora_mode);
 }
 
 void onTxDone()
 {
-	Serial.print("\t\tlora tx done in ");
-	Serial.print(millis()-now);
-	Serial.println(" ms");
+	LoRaTXDoneSemaphore=true;
+	LoRaBurstDuration=millis()-TXStartTimeMillis;
 }
 
 int LORACommandHandler(uint8_t *cmd,uint16_t cmdptr)
@@ -114,13 +99,8 @@ int LORACommandHandler(uint8_t *cmd,uint16_t cmdptr)
 					TxPacketLength=16;
 					LoRaTransmitSemaphore=1;
 					
-					if(lora_mode==0)
-						LedPattern=0xf0f0f000;
-					else
-						LedPattern=0xaaa00000;
-					
-					LedRepeatCount=0;
-					LedBitCount=0;					
+					if(strcmp(lora_mode,"Long Range")==0)	led_control(0xf0f0f0f0,0);
+					else									led_control(0xaa000000,0);
 					
 					break;
 					
@@ -130,13 +110,8 @@ int LORACommandHandler(uint8_t *cmd,uint16_t cmdptr)
 //					TxPacketLength=16;
 					LoRaTransmitSemaphore=1;
 					
-					if(lora_mode==0)
-						LedPattern=0xf0f0f000;
-					else
-						LedPattern=0xaaa00000;
-					
-					LedRepeatCount=0;
-					LedBitCount=0;
+					if(strcmp(lora_mode,"Long Range")==0)	led_control(0xf0f0f0f0,0);
+					else									led_control(0xaa000000,0);
 					
 					break;
 		
@@ -150,8 +125,8 @@ int LORACommandHandler(uint8_t *cmd,uint16_t cmdptr)
 					SetLoRaMode(lora_mode);
 					break;
 		
-		case 'm':	if(lora_mode==0)	Serial.print("Long range mode\r\n");
-					else				Serial.print("High rate mode\r\n");
+		case 'm':	Serial.print(lora_mode);
+					Serial.print(" mode\r\n");
 					break;
 					
 		case 'c':	lora_constant_transmit=!lora_constant_transmit;
@@ -276,16 +251,14 @@ void PollLoRa(void)
 	if(LoRaTransmitSemaphore)
 	{
 		Serial.print("Starting tx ...");
-		
-		now=millis();
+		TXStartTimeMillis=millis();
 		
 #if 0
 		Serial.println("Setting LoRa parameters");
 		LoRa.setTxPower(5);
-		
-		SetLoRaMode(lora_mode);
-#endif
-		
+		SetLoRaMode(lora_mode);		
+#endif		
+
 		LoRa.setFrequency(lora_freq);
 		
 		LoRa.beginPacket(false);
@@ -293,6 +266,14 @@ void PollLoRa(void)
 		LoRa.endPacket(true);
 		
 		LoRaTransmitSemaphore=0;
+	}
+
+	if(LoRaTXDoneSemaphore)
+	{
+		Serial.print("\t\tlora tx done in ");
+		Serial.print(LoRaBurstDuration);
+		Serial.print(" ms\r\n");
+		LoRaTXDoneSemaphore=false;
 	}
 }
 

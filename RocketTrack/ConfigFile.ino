@@ -1,5 +1,5 @@
 
-#define DEBUGCONFIG 1
+#define DEBUGCONFIG 0
   
 #include "Accelerometer.h"
 #include "Barometer.h"
@@ -110,7 +110,7 @@ void printErrorMessage(uint8_t e,bool eol=true)
 
 int ReadConfigFileSDCard(void)
 {
-	const size_t bufferLen=64;
+	const size_t bufferLen=128;
 	char buffer[bufferLen];
 	const char *filename="/tracker.ini";
 
@@ -118,7 +118,7 @@ int ReadConfigFileSDCard(void)
 		
 	if(!ini.open())
 	{
-		Serial.print("Ini file ");	Serial.print(filename);		Serial.println(" does not exist");
+		Serial.print("\tIni file ");	Serial.print(filename);		Serial.println(" does not exist");
 		
 		// Cannot do anything else
 		return(1);
@@ -131,7 +131,7 @@ int ReadConfigFileSDCard(void)
 	
 	if(!ini.validate(buffer,bufferLen))
 	{
-		Serial.print("ini file ");	Serial.print(ini.getFilename());	Serial.print(" not valid: ");	printErrorMessage(ini.getError());
+		Serial.print("\tini file ");	Serial.print(ini.getFilename());	Serial.print(" not valid: ");	printErrorMessage(ini.getError());
 		
 		// Cannot do anything else
 		return(1);
@@ -140,7 +140,7 @@ int ReadConfigFileSDCard(void)
 
 int ReadConfigFileSPIFFS(void)
 {
-	const size_t bufferLen=64;
+	const size_t bufferLen=128;
 	char buffer[bufferLen];
 	const char *filename="/tracker.ini";
 
@@ -148,7 +148,7 @@ int ReadConfigFileSPIFFS(void)
 		
 	if(!ini.open())
 	{
-		Serial.print("Ini file ");	Serial.print(filename);		Serial.println(" does not exist");
+		Serial.print("\tIni file ");	Serial.print(filename);		Serial.println(" does not exist");
 			
 		// Cannot do anything else
 		return(1);
@@ -161,13 +161,13 @@ int ReadConfigFileSPIFFS(void)
 	
 	if(!ini.validate(buffer,bufferLen))
 	{
-		Serial.print("ini file ");	Serial.print(ini.getFilename());	Serial.print(" not valid: ");	printErrorMessage(ini.getError());
+		Serial.print("\tini file ");	Serial.print(ini.getFilename());	Serial.print(" not valid: ");	printErrorMessage(ini.getError());
 		
 		// Cannot do anything else
 		return(1);
 	}
 
-	Serial.print("ini file is valid, starting to read the parameters\r\n");
+	Serial.print("\tini file is valid, starting to read the parameters\r\n");
 	
 	int cnt=0;
 	int values_used=0;
@@ -180,7 +180,7 @@ int ReadConfigFileSPIFFS(void)
 		}
 		
 #if DEBUGCONFIG
-		Serial.print("Looking for Tag \"");		Serial.print(config[cnt].tag);	Serial.print("\" in Section \"");	Serial.print(config[cnt].section);	Serial.print("\"");
+		Serial.print("\t\tLooking for Tag \"");		Serial.print(config[cnt].tag);	Serial.print("\" in Section \"");	Serial.print(config[cnt].section);	Serial.print("\"");
 #endif
 		
 		if(ini.getValue(config[cnt].section,config[cnt].tag,buffer,sizeof(buffer)))
@@ -227,7 +227,7 @@ void ReadConfigFile(void)
 	
 	if(sdcard_enable)
 	{
-		Serial.println("Attempting to read the config from an SD card");
+		Serial.println("\tAttempting to read the config from an SD card");
 		sdcard_read_error=ReadConfigFileSDCard();
 	}	
 	else
@@ -235,23 +235,22 @@ void ReadConfigFile(void)
 	
 	if(sdcard_read_error)
 	{
-		Serial.println("Reading the config from an SD card failed ...");
+		Serial.println("\tReading the config from an SD card failed ...");
 
 		if(spiffs_enable)
 		{
-			Serial.println("Attempting to read the config from SPI Flash");
+			Serial.println("\tAttempting to read the config from SPI Flash");
 			spiffs_read_error=ReadConfigFileSPIFFS();
 			
 			if(spiffs_read_error)
-				Serial.println("Reading the config from SPI Flash failed ...");
+				Serial.println("\tReading the config from SPI Flash failed ...");
 		}
 		
 		if(sdcard_read_error&&spiffs_read_error)
 		{
-			Serial.println("Using the default config values");
+			Serial.println("\tUsing the default config values");
 			SetDefaultConfigValues();
 		}
-			
 	}
 }
 

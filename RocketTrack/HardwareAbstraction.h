@@ -9,6 +9,12 @@
 	#define MISO			19		// GPIO19 -- SX1278's MISO
 	#define MOSI			27		// GPIO27 -- SX1278's MOSI
 
+	#define LORA_NSS		18
+	#define LORA_RESET		14
+	#define LORA_DIO0		26
+	
+	#define SDCARD_NSS		23
+
 	#define SDA				21
 	#define SCL				22
 

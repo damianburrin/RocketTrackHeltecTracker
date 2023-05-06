@@ -14,10 +14,16 @@ int last_baro_time=0;
 
 #define BME_ADDRESS	0x76
 
-//#define SEALEVELPRESSURE_HPA (1013.25)
-#define SEALEVELPRESSURE_HPA (1009.70)
+#define SEALEVELPRESSURE_HPA (1013.25)
 
 Adafruit_BME280 bme;
+
+float baro_temp=0.0f;
+float baro_pressure=0.0f;
+float baro_height=0.0f;
+float baro_humidity=0.0f;
+
+float max_baro_height=0.0f;
 
 int SetupBarometer(void)
 {
@@ -28,6 +34,8 @@ int SetupBarometer(void)
 		
 		return(1);
 	}	
+
+	Serial.print("BME280 barometer configured\r\n");
 
 	last_baro_time=millis_1pps();
 	
@@ -40,10 +48,18 @@ void PollBarometer(void)
 	{
 		if(millis_1pps()>(last_baro_time+baro_rate))
 		{
-			Serial.print("Temperature = ");			Serial.print(bme.readTemperature());					Serial.print(" *C\t");
-			Serial.print("Pressure = ");			Serial.print(bme.readPressure()/100.0F);				Serial.print(" hPa\t");
-			Serial.print("Approx. Altitude = ");	Serial.print(bme.readAltitude(SEALEVELPRESSURE_HPA));	Serial.print(" m\t");
-			Serial.print("Humidity = ");			Serial.print(bme.readHumidity());						Serial.print(" %\t");
+			baro_temp=bme.readTemperature();
+			baro_pressure=bme.readPressure()/100.0F;
+			baro_height=bme.readAltitude(SEALEVELPRESSURE_HPA);
+			baro_humidity=bme.readHumidity();
+
+			if(max_baro_height<baro_height)
+				max_baro_height=baro_height;
+			
+			Serial.print("Temperature = ");			Serial.print(baro_temp);		Serial.print(" *C\t");
+			Serial.print("Pressure = ");			Serial.print(baro_pressure);	Serial.print(" hPa\t");
+			Serial.print("Approx. Altitude = ");	Serial.print(baro_height);		Serial.print(" m\t");
+			Serial.print("Humidity = ");			Serial.print(baro_humidity);	Serial.print(" %\t");
 		
 			Serial.println();
 		

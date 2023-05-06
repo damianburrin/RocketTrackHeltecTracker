@@ -37,7 +37,7 @@ uint32_t ttff=0;
 uint32_t msss=0;
 
 // from NAV-SVINFO
-uint8_t numCh=0;
+uint8_t gps_numCh=0;
 uint8_t globalFlags=0;
 uint16_t reserved2=0;
 
@@ -50,15 +50,26 @@ int8_t elev[MAX_CHANNELS];
 int16_t azim[MAX_CHANNELS];
 int32_t prRes[MAX_CHANNELS];
 
+uint8_t gps_numSats=0;
+
 // from NAV-POSLLH
-int32_t lon=0;
-int32_t lat=0;
-int32_t height=0;
+int32_t gps_lon=0;
+int32_t gps_lat=0;
+int32_t gps_height=0;
 int32_t hMSL=0;
 uint32_t hAcc=0;
 uint32_t vAcc=0;
 
 uint8_t hAccValue=0;
+
+// from NAV-TIMEUTC
+
+uint16_t gps_year;
+uint8_t gps_month;
+uint8_t gps_day;
+uint8_t gps_hour;
+uint8_t gps_min;
+uint8_t gps_sec;
 
 void CalculateChecksum(uint8_t *buffer,uint16_t bufferptr,uint8_t *CK_A,uint8_t *CK_B)
 {
@@ -218,6 +229,7 @@ int SetupGPS(void)
 	SetMessageRate(0x01,0x02,0x01);	// NAV-POSLLH every fix
 	SetMessageRate(0x01,0x03,0x05);	// NAV-STATUS every fifth fix
 	SetMessageRate(0x01,0x30,0x05);	// NAV-SVINFO every fifth fix
+	SetMessageRate(0x01,0x21,0x05);	// NAV-TIMEUTC every fifth fix
 	Set5Hz_Fix_Rate();
 #else
 	SetMessageRate(0x01,0x02,0x01);	// NAV-POSLLH every fix
@@ -419,7 +431,7 @@ void ProcessUBX(uint8_t *buffer,uint16_t bufferptr)
 	if((buffer[2]==0x01)&&(buffer[3]==0x02))	UnpackNAVPOSLLH(buffer);
 	if((buffer[2]==0x01)&&(buffer[3]==0x03))	UnpackNAVSTATUS(buffer);
 	if((buffer[2]==0x01)&&(buffer[3]==0x30))	UnpackNAVSVINFO(buffer);
-	
+	if((buffer[2]==0x01)&&(buffer[3]==0x21))	UnpackNAVTIMEUTC(buffer);
 }
 
 void UnpackNAVPOSLLH(uint8_t *buffer)
@@ -429,9 +441,9 @@ void UnpackNAVPOSLLH(uint8_t *buffer)
 #endif
 	
 	iTOW=*((uint32_t *)(buffer+6));
-	lon=*((int32_t *)(buffer+10));
-	lat=*((int32_t *)(buffer+14));
-	height=*((int32_t *)(buffer+18));
+	gps_lon=*((int32_t *)(buffer+10));
+	gps_lat=*((int32_t *)(buffer+14));
+	gps_height=*((int32_t *)(buffer+18));
 	hMSL=*((int32_t *)(buffer+22));
 	hAcc=*((uint32_t *)(buffer+26));
 	vAcc=*((uint32_t *)(buffer+30));
@@ -443,8 +455,8 @@ void UnpackNAVPOSLLH(uint8_t *buffer)
 	Serial.printf("\t\thAcc = %ld mm\n",hAcc);
 #endif
 #if (DEBUG>2)
-	Serial.printf("\t\tLat = %.6f, Lon = %.6f, ",lat/1e7,lon/1e7,height/1e3);
-	Serial.printf("height = %.1f\n",height/1e3);
+	Serial.printf("\t\tLat = %.6f, Lon = %.6f, ",gps_lat/1e7,gps_lon/1e7);
+	Serial.printf("height = %.1f\n",gps_height/1e3);
 #endif
 }
 
@@ -469,6 +481,28 @@ void UnpackNAVSTATUS(uint8_t *buffer)
 #endif
 }
 
+void UnpackNAVTIMEUTC(uint8_t *buffer)
+{
+#if (DEBUG>1)
+	Serial.println("NAV-TIMEUTC");
+#endif
+	
+	iTOW=*((uint32_t *)(buffer+6));
+	
+	gps_year=*((uint16_t *)(buffer+18));
+	gps_month=*(buffer+20);
+	gps_day=*(buffer+21);
+	gps_hour=*(buffer+22);
+	gps_min=*(buffer+23);
+	gps_sec=*(buffer+24);
+	
+#if (DEBUG>2)
+	char buffer[32];
+	sprintf(buffer,"%04d/%02d/%02d %02d:%02d:%02d\r\n",gps_year,gps_month,gps_day,gps_hour,gps_min,gps_sec);
+	display.print(buffer);	
+#endif
+}
+
 void UnpackNAVSVINFO(uint8_t *buffer)
 {
 #if (DEBUG>1)
@@ -476,12 +510,13 @@ void UnpackNAVSVINFO(uint8_t *buffer)
 #endif
 	
 	iTOW=*((uint32_t *)(buffer+6));
-	numCh=*(buffer+10);
+	gps_numCh=*(buffer+10);
 	globalFlags=*(buffer+11);
 	reserved2=*((uint16_t *)(buffer+12));
 	
 	uint8_t cnt;
-	for(cnt=0;cnt<numCh;cnt++)
+	gps_numSats=0;
+	for(cnt=0;cnt<gps_numCh;cnt++)
 	{
 		chn[cnt]=*(buffer+14+12*cnt);
 		svid[cnt]=*(buffer+15+12*cnt);
@@ -491,6 +526,8 @@ void UnpackNAVSVINFO(uint8_t *buffer)
 		elev[cnt]=*((int8_t *)(buffer+19+12*cnt));
 		azim[cnt]=*((int16_t *)(buffer+20+12*cnt));
 		prRes[cnt]=*((int32_t *)(buffer+22+12*cnt));
+		
+		if(cno[cnt]>0)	gps_numSats++;
 	}
 	
 #if (DEBUG>2)
@@ -513,8 +550,8 @@ int GPSCommandHandler(uint8_t *cmd,uint16_t cmdptr)
 	switch(cmd[1]|0x20)
 	{
 		case 'p':	// position fix
-					Serial.printf("Lat = %.6f, Lon = %.6f, ",lat/1e7,lon/1e7,height/1e3);
-					Serial.printf("height = %.1f\r\n",height/1e3);
+					Serial.printf("Lat = %.6f, Lon = %.6f, ",gps_lat/1e7,gps_lon/1e7);
+					Serial.printf("height = %.1f\r\n",gps_height/1e3);
 					break;
 		
 		case 'f':	// fix status
@@ -525,7 +562,7 @@ int GPSCommandHandler(uint8_t *cmd,uint16_t cmdptr)
 		
 		case 's':	// satellite info
 					Serial.println("Chan\tPRN\tElev\tAzim\tC/No");
-					for(cnt=0;cnt<numCh;cnt++)
+					for(cnt=0;cnt<gps_numCh;cnt++)
 					{
 						Serial.print(cnt);	Serial.print("\t"); Serial.print(svid[cnt]);	Serial.print("\t");	Serial.print(elev[cnt]);	Serial.print("\t");	Serial.print(azim[cnt]);	Serial.print("\t");	Serial.println(cno[cnt]);
 					}
