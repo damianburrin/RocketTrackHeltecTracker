@@ -3,6 +3,9 @@ uint8_t batvolt=0x00;
 bool livepmicdata=false;
 bool PMIC_semaphore=false;
 
+bool short_button_press=false;
+bool long_button_press=false;
+
 AXP20X_Class axp;
 
 void PMIC_Interrupt(void)
@@ -55,11 +58,9 @@ void PollPMIC(void)
         axp.readIRQ();
         Serial.println("axp20x irq enter!");
 
-        if(axp.isPEKShortPressIRQ())	{	Serial.print("isPEKShortPressIRQ\n");	}
-        if(axp.isPEKLongtPressIRQ())	{	Serial.print("isPEKLongtPressIRQ\n");	}
-		if(axp.isPEKRisingEdgeIRQ())	{	Serial.print("isPEKRisingEdgeIRQ\n");	}
-        if(axp.isPEKFallingEdgeIRQ())	{	Serial.print("isPEKFallingEdgeIRQ\n");	}
-        
+        if(axp.isPEKShortPressIRQ())	{	short_button_press=true;	}
+        if(axp.isPEKLongtPressIRQ())	{	long_button_press=true;		}
+		        
 	    axp.clearIRQ();
         PMIC_semaphore=false;
 	}

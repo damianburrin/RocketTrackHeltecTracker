@@ -21,6 +21,8 @@
 
 Adafruit_SSD1306 display(SCREEN_WIDTH,SCREEN_HEIGHT,&Wire,OLED_RESET);
 
+int display_update_suspend=0;
+
 int SetupDisplay(void)
 {
 	// SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
@@ -54,6 +56,9 @@ void PollDisplay(void)
 {
 	static int DisplayState=0;
 	static int LastDisplayChange=0;
+	
+	if(millis()<display_update_suspend)
+		return;
 	
 	if(millis()>=(LastDisplayChange+DISPLAY_UPDATE_PERIOD))
 	{
@@ -158,5 +163,24 @@ void SetTXIndicator(int on)
 	}
 	
 	display.display();
+}
+
+void ShowModeChange(void)
+{
+	display.clearDisplay();
+
+	display.setTextSize(4);
+	display.setCursor(8,48);
+	
+	if(strcmp(lora_mode,"High Rate")==0)	{	display.print("HR");	}
+	else									{	display.print("LR");	}
+
+	display.setTextSize(2);
+	display.setCursor(8,85);
+	display.print("Mode");
+	
+	display.display();
+
+	display_update_suspend=millis()+3000;	
 }
 

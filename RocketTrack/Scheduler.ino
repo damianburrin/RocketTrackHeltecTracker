@@ -46,6 +46,29 @@ void PollScheduler(void)
 	
 	last_user_button=user_button;
 	
+	if(short_button_press)
+	{
+		lora_constant_transmit=!lora_constant_transmit;
+		Serial.print("Setting constant transmit to ");
+		Serial.println(lora_constant_transmit);
+		
+		short_button_press=false;
+	}
+	
+	if(long_button_press)
+	{
+		if(strcmp(lora_mode,"High Rate")==0)	strcpy(lora_mode,"Long Range");
+		else									strcpy(lora_mode,"High Rate");
+		
+		SetLoRaMode(lora_mode);
+		Serial.print("Toggling lora_mode to ");
+		Serial.println(lora_mode);
+		
+		ShowModeChange();
+		
+		long_button_press=false;
+	}
+	
 	if(millis()>=next_transmit)
 	{
 		if(		(LoRaTransmitSemaphore==0)
