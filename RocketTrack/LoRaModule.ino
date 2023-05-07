@@ -13,6 +13,8 @@ bool LoRaTXDoneSemaphore=false;
 int LoRaBurstDuration=0;
 uint32_t TXStartTimeMillis;
 
+int tx_active=0;
+
 // LORA settings
 #define LORA_FREQ			433920000
 #define LORA_OFFSET			0         // Frequency to add in kHz to make Tx frequency accurate
@@ -252,6 +254,9 @@ void PollLoRa(void)
 	{
 		Serial.print("Starting tx ...");
 		TXStartTimeMillis=millis();
+
+		tx_active=1;
+		SetTXIndicator(tx_active);
 		
 #if 0
 		Serial.println("Setting LoRa parameters");
@@ -274,6 +279,9 @@ void PollLoRa(void)
 		Serial.print(LoRaBurstDuration);
 		Serial.print(" ms\r\n");
 		LoRaTXDoneSemaphore=false;
+
+		tx_active=0;
+		SetTXIndicator(tx_active);
 	}
 }
 

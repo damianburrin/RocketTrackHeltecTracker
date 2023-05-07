@@ -127,6 +127,8 @@ void PollDisplay(void)
 		else					display.println("3D");
 			
 		display.display();
+
+		SetTXIndicator(tx_active);
 		
 		DisplayState++;
 		if(DisplayState>=16)
@@ -134,5 +136,27 @@ void PollDisplay(void)
 		
 		LastDisplayChange=millis();
 	}
+}
+
+void SetTXIndicator(int on)
+{
+	if(on)
+	{
+		display.setTextSize(2);
+		display.setCursor(48,128-32);
+		display.print("T");
+		display.setCursor(48,128-16);
+		display.print("X");
+	}
+	else
+	{
+		display.setTextSize(2);
+		display.setCursor(48,128-32);
+		display.print(" ");
+		display.setCursor(48,128-16);
+		display.print(" ");
+	}
+	
+	display.display();
 }
 

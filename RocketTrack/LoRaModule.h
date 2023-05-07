@@ -23,3 +23,5 @@ extern int lr_period;
 
 extern bool lora_constant_transmit;
 
+extern int tx_active;
+
