@@ -10,11 +10,12 @@
 int baro_enable=1;
 
 bool baro_trigger=false;
+int baro_gps_sync=0;
 
 char baro_type[32]="Generic";
 
 int baro_rate=100;
-int baro_period=1000000;	// 10Hz
+int baro_period=1000;	// 10Hz
 int last_baro_time=0;
 
 #define BME_ADDRESS	0x76
@@ -43,6 +44,8 @@ int SetupBarometer(void)
 	if(baro_rate!=0)
 		baro_period=1000/baro_rate;
 	
+	Serial.printf("Baro period = %d\r\n",baro_period);
+	
 	Serial.print("BME280 barometer configured\r\n");
 
 	last_baro_time=millis_1pps();
@@ -54,39 +57,50 @@ void PollBarometer(void)
 {
 	if(baro_enable)
 	{
-		if(baro_trigger)
-//			||	(millis_1pps()>(last_baro_time+baro_period))	)
+		if(baro_gps_sync)
 		{
+			if(baro_trigger)
+			{
+				SampleBarometer();
+				baro_trigger=false;
+			}
+		}
+		else
+		{
+			if(millis_1pps()>(last_baro_time+baro_period))
+			{
+				SampleBarometer();
+				last_baro_time=millis_1pps();
+			}
+		}
+	}
+}
+
+void SampleBarometer(void)
+{
 #if DEBUG>2
-			Serial.println(millis_1pps());
+	Serial.println(millis_1pps());
 #endif
 			
-			baro_temp=bme.readTemperature();
-			baro_pressure=bme.readPressure()/100.0F;
-			baro_height=bme.readAltitude(SEALEVELPRESSURE_HPA);
-			baro_humidity=bme.readHumidity();
+	baro_temp=bme.readTemperature();
+	baro_pressure=bme.readPressure()/100.0F;
+	baro_height=bme.readAltitude(SEALEVELPRESSURE_HPA);
+	baro_humidity=bme.readHumidity();
 
-			if(max_baro_height<baro_height)
-				max_baro_height=baro_height;
+	if(max_baro_height<baro_height)
+		max_baro_height=baro_height;
 
 #if DEBUG>1
-			Serial.print("Temperature = ");			Serial.print(baro_temp);		Serial.print(" *C\t");
-			Serial.print("Pressure = ");			Serial.print(baro_pressure);	Serial.print(" hPa\t");
-			Serial.print("Approx. Altitude = ");	Serial.print(baro_height);		Serial.print(" m\t");
-			Serial.print("Humidity = ");			Serial.print(baro_humidity);	Serial.print(" %\t");
-			Serial.println();
+	Serial.print("Temperature = ");			Serial.print(baro_temp);		Serial.print(" *C\t");
+	Serial.print("Pressure = ");			Serial.print(baro_pressure);	Serial.print(" hPa\t");
+	Serial.print("Approx. Altitude = ");	Serial.print(baro_height);		Serial.print(" m\t");
+	Serial.print("Humidity = ");			Serial.print(baro_humidity);	Serial.print(" %\t");
+	Serial.println();
 #endif
 		
-			if(logging_enable)
-			{
-			
-			}
-		
-			last_baro_time=millis_1pps();
-			
-			if(baro_trigger)
-				baro_trigger=false;
-		}	
+	if(logging_enable)
+	{
+	
 	}
 }
 

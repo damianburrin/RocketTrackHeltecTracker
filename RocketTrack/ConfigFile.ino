@@ -74,6 +74,7 @@ configvalue_t config[]={
 	{	"Barometer",		"Enable",			(void *)&baro_enable,				CFGINTEGER,		"1"							},
 	{	"Barometer",		"Type",				(void *)baro_type,					CFGSTRING,		"BME280"					},
 	{	"Barometer",		"MeasurementRate",	(void *)&baro_rate,					CFGINTEGER,		"100"						},
+	{	"Barometer",		"GPSSync",			(void *)&baro_gps_sync,				CFGINTEGER,		"1"							},
 	{	"Accelerometer",	"Enable",			(void *)&acc_enable,				CFGINTEGER,		"1"							},
 	{	"Accelerometer",	"Type",				(void *)acc_type,					CFGSTRING,		"MPU6050"					},
 	{	"Accelerometer",	"MeasurementRate",	(void *)&acc_rate,					CFGINTEGER,		"200"						},
