@@ -1,4 +1,6 @@
 
+#define DEBUG 2
+
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BME280.h>
@@ -10,6 +12,7 @@ int baro_enable=1;
 char baro_type[32]="Generic";
 
 int baro_rate=100;
+int baro_period=1000;	// 10Hz
 int last_baro_time=0;
 
 #define BME_ADDRESS	0x76
@@ -34,7 +37,10 @@ int SetupBarometer(void)
 		
 		return(1);
 	}	
-
+	
+	if(baro_rate!=0)
+		baro_period=1000/baro_rate;
+	
 	Serial.print("BME280 barometer configured\r\n");
 
 	last_baro_time=millis_1pps();
@@ -46,8 +52,12 @@ void PollBarometer(void)
 {
 	if(baro_enable)
 	{
-		if(millis_1pps()>(last_baro_time+baro_rate))
+		if(millis_1pps()>(last_baro_time+baro_period))
 		{
+#if DEBUG>2
+			Serial.println(millis_1pps());
+#endif
+			
 			baro_temp=bme.readTemperature();
 			baro_pressure=bme.readPressure()/100.0F;
 			baro_height=bme.readAltitude(SEALEVELPRESSURE_HPA);
@@ -55,23 +65,22 @@ void PollBarometer(void)
 
 			if(max_baro_height<baro_height)
 				max_baro_height=baro_height;
-			
+
+#if DEBUG>1
 			Serial.print("Temperature = ");			Serial.print(baro_temp);		Serial.print(" *C\t");
 			Serial.print("Pressure = ");			Serial.print(baro_pressure);	Serial.print(" hPa\t");
 			Serial.print("Approx. Altitude = ");	Serial.print(baro_height);		Serial.print(" m\t");
 			Serial.print("Humidity = ");			Serial.print(baro_humidity);	Serial.print(" %\t");
-		
 			Serial.println();
+#endif
 		
 			if(logging_enable)
 			{
 			
 			}
 		
-		
-		}
-	
-	
+			last_baro_time=millis_1pps();
+		}	
 	}
 }
 
