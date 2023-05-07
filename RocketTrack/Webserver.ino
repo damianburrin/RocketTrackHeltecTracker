@@ -65,7 +65,7 @@ String processor(const String& var)
 	}
 	else if(var=="HORIZONTAL_ACCURACY")
 	{
-		sprintf(buffer,"%.1f",hAcc);
+		sprintf(buffer,"%.1f",gps_hAcc);
 	}
 	else if(var=="SAT_NUMS")
 	{

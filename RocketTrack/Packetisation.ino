@@ -23,7 +23,7 @@ void PackPacket(uint8_t *TxPacket,uint16_t *TxPacketLength)
 	
 	double longitude=(double)gps_lon/1e7;
 	double latitude=(double)gps_lat/1e7;
-	double hght=(double)hMSL/1e3;
+	double hght=(double)gps_hMSL/1e3;
 	
 	uint32_t packed_longitude=(uint32_t)(longitude*131072.0);
 	uint32_t packed_latitude=(uint32_t)(latitude*131072.0);
@@ -49,7 +49,7 @@ void PackPacket(uint8_t *TxPacket,uint16_t *TxPacketLength)
 	packet[11]=(packed_height&0xff00)>>8;
 	
 	// horizontal accuracy estimate from NAV-POSLLH message in units of 0.5m
-	packet[12]=hAccValue;
+	packet[12]=gps_hAccValue;
 	
 	// battery voltage divided by 20 so 4250 would read as a 212 count, already scaled in PMIC.ino
 	packet[13]=batvolt;

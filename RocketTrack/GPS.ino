@@ -56,11 +56,11 @@ uint8_t gps_numSats=0;
 int32_t gps_lon=0;
 int32_t gps_lat=0;
 int32_t gps_height=0;
-int32_t hMSL=0;
-uint32_t hAcc=0;
-uint32_t vAcc=0;
+int32_t gps_hMSL=0;
+uint32_t gps_hAcc=0;
+uint32_t gps_vAcc=0;
 
-uint8_t hAccValue=0;
+uint8_t gps_hAccValue=0;
 
 // from NAV-TIMEUTC
 
@@ -444,20 +444,20 @@ void UnpackNAVPOSLLH(uint8_t *buffer)
 	gps_lon=*((int32_t *)(buffer+10));
 	gps_lat=*((int32_t *)(buffer+14));
 	gps_height=*((int32_t *)(buffer+18));
-	hMSL=*((int32_t *)(buffer+22));
-	hAcc=*((uint32_t *)(buffer+26));
-	vAcc=*((uint32_t *)(buffer+30));
+	gps_hMSL=*((int32_t *)(buffer+22));
+	gps_hAcc=*((uint32_t *)(buffer+26));
+	gps_vAcc=*((uint32_t *)(buffer+30));
 	
-	if((hAcc/500)>255)	hAccValue=255;
-	else				hAccValue=(uint8_t)(hAcc/500);
+	if((gps_hAcc/500)>255)	gps_hAccValue=255;
+	else					gps_hAccValue=(uint8_t)(gps_hAcc/500);
 	
 #if 0
-	Serial.printf("\t\thAcc = %ld mm\n",hAcc);
+	Serial.printf("\t\thAcc = %ld mm\n",gps_hAcc);
 #endif
-#if (DEBUG>2)
+//#if (DEBUG>2)
 	Serial.printf("\t\tLat = %.6f, Lon = %.6f, ",gps_lat/1e7,gps_lon/1e7);
-	Serial.printf("height = %.1f\n",gps_height/1e3);
-#endif
+	Serial.printf("height = %.1f\r\n",gps_hMSL/1e3);
+//#endif
 }
 
 void UnpackNAVSTATUS(uint8_t *buffer)

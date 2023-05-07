@@ -86,7 +86,7 @@ void PollDisplay(void)
 							display.println();
 							display.printf("Lat:\r\n %.6f\r\n",gps_lat/1e7);
 							display.printf("Lon:\r\n %.6f\r\n",gps_lon/1e7);		
-							display.printf("Altitude:\r\n %d m\r\n",gps_height);		
+							display.printf("Altitude:\r\n %.1f m\r\n",gps_hMSL/1e3);
 							
 							break;
 #if 1
@@ -97,13 +97,6 @@ void PollDisplay(void)
 							break;
 #endif
 #if 0
-			case 8 ... 9:	display.println();
-							display.print("Alt(GPS):\r\n  ");
-							display.print(gps_height);
-							display.println(" m");
-			
-							break;
-							
 			case 10 ... 11:	display.println();
 							display.print("Max(GPS):\r\n  ");
 							display.print(max_gps_height);
