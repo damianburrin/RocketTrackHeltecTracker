@@ -77,7 +77,7 @@ void PollDisplay(void)
 		sprintf(buffer,"%04d/%02d/%02d\r\n",gps_year,gps_month,gps_day);
 		display.print(buffer);
 		
-		sprintf(buffer,"%02d%02d%02d\r\n",gps_hour,gps_min,gps_sec);
+		sprintf(buffer,"  %02d%02d%02d\r\n",gps_hour,gps_min,gps_sec);
 		display.print(buffer);
 		
 		switch(DisplayState)
@@ -86,39 +86,35 @@ void PollDisplay(void)
 							display.println();
 							display.printf("Lat:\r\n %.6f\r\n",gps_lat/1e7);
 							display.printf("Lon:\r\n %.6f\r\n",gps_lon/1e7);		
-							display.printf("Altitude:\r\n %.1f m\r\n",gps_hMSL/1e3);
-							
+							display.printf("Altitude:\r\n %.1f m\r\n",gps_hMSL/1e3);							
 							break;
-#if 1
+			
 			case 6 ... 7:	display.setTextSize(1);
-							display.print("\r\n# Sats: ");
+							display.print("\r\n# Sats:\r\n  ");
+							display.setTextSize(2);
 							display.println(gps_numSats);
-							
 							break;
-#endif
-#if 0
-			case 10 ... 11:	display.println();
-							display.print("Max(GPS):\r\n  ");
-							display.print(max_gps_height);
-							display.println(" m");
-							
+
+			case 8 ... 11:	display.setTextSize(1);
+							display.print("\r\nGPS Alt\r\nCurr\r\n");
+							display.setTextSize(2);
+							display.printf("%.1f\r\n",gps_hMSL/1e3);
+							display.setTextSize(1);
+							display.print("Max\r\n");
+							display.setTextSize(2);
+							display.printf("%.1f\r\n",max_gps_hMSL/1e3);
 							break;
-				
-			case 12 ... 13:	display.println();
-							display.print("Alt(Baro):\r\n  ");
-							display.print(baro_height);
-							display.println(" m");
 							
+			case 12 ... 15:	display.setTextSize(1);
+							display.print("\r\nBaro Alt\r\nCurr\r\n");
+							display.setTextSize(2);
+							display.printf("%.1f\r\n",baro_height);
+							display.setTextSize(1);
+							display.print("Max\r\n");
+							display.setTextSize(2);
+							display.printf("%.1f\r\n",max_baro_height);
 							break;
 		
-			case 14 ... 15:	display.println();
-							display.print("Max(Baro):\r\n  ");
-							display.print(max_baro_height);
-							display.println(" m");
-							
-							break;
-#endif
-			
 			default:		
 							DisplayState=0;
 							break;
@@ -133,7 +129,7 @@ void PollDisplay(void)
 		display.display();
 		
 		DisplayState++;
-		if(DisplayState>=8)
+		if(DisplayState>=16)
 			DisplayState=0;
 		
 		LastDisplayChange=millis();

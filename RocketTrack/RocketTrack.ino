@@ -156,12 +156,13 @@ void loop()
 	PollLEDs();
 	PollDisplay();
 	PollScheduler();
-
+	
 #if 0
 	PollAccelerometer();
 	PollGyro();
-	PollBarometer();
 #endif
+	
+	PollBarometer();
 }
 
 void PollSerial(void)

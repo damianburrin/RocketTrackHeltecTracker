@@ -57,6 +57,7 @@ int32_t gps_lon=0;
 int32_t gps_lat=0;
 int32_t gps_height=0;
 int32_t gps_hMSL=0;
+int32_t max_gps_hMSL=0;
 uint32_t gps_hAcc=0;
 uint32_t gps_vAcc=0;
 
@@ -450,6 +451,9 @@ void UnpackNAVPOSLLH(uint8_t *buffer)
 	
 	if((gps_hAcc/500)>255)	gps_hAccValue=255;
 	else					gps_hAccValue=(uint8_t)(gps_hAcc/500);
+	
+	if(max_gps_hMSL<gps_hMSL)
+		max_gps_hMSL=gps_hMSL;
 	
 #if 0
 	Serial.printf("\t\thAcc = %ld mm\n",gps_hAcc);

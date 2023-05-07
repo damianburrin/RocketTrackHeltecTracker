@@ -12,6 +12,7 @@ extern int32_t gps_lat;
 extern int32_t gps_lon;
 extern int32_t gps_height;
 extern int32_t gps_hMSL;
+extern int32_t max_gps_hMSL;
 extern uint32_t gps_hAcc;
 extern uint32_t gps_vAcc;
 
