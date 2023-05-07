@@ -1,5 +1,5 @@
 
-#define DEBUG 2
+#define DEBUG 1
 
 #include <Wire.h>
 #include <Adafruit_Sensor.h>

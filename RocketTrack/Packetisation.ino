@@ -1,5 +1,5 @@
 
-#define DEBUG 2
+#define DEBUG 1
 
 #define LORA_ID 0
 
