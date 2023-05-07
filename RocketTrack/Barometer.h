@@ -4,6 +4,7 @@
 extern int baro_enable;
 extern char baro_type[];
 extern int baro_rate;
+extern bool baro_trigger;
 
 int SetupBarometer(void);
 void PollBarometer(void);

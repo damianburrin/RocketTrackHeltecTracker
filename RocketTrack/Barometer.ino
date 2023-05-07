@@ -9,10 +9,12 @@
 
 int baro_enable=1;
 
+bool baro_trigger=false;
+
 char baro_type[32]="Generic";
 
 int baro_rate=100;
-int baro_period=1000;	// 10Hz
+int baro_period=1000000;	// 10Hz
 int last_baro_time=0;
 
 #define BME_ADDRESS	0x76
@@ -52,7 +54,8 @@ void PollBarometer(void)
 {
 	if(baro_enable)
 	{
-		if(millis_1pps()>(last_baro_time+baro_period))
+		if(baro_trigger)
+//			||	(millis_1pps()>(last_baro_time+baro_period))	)
 		{
 #if DEBUG>2
 			Serial.println(millis_1pps());
@@ -80,6 +83,9 @@ void PollBarometer(void)
 			}
 		
 			last_baro_time=millis_1pps();
+			
+			if(baro_trigger)
+				baro_trigger=false;
 		}	
 	}
 }

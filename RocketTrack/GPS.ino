@@ -462,6 +462,8 @@ void UnpackNAVPOSLLH(uint8_t *buffer)
 	Serial.printf("\t\tLat = %.6f, Lon = %.6f, ",gps_lat/1e7,gps_lon/1e7);
 	Serial.printf("height = %.1f\r\n",gps_hMSL/1e3);
 //#endif
+	
+	baro_trigger=true;
 }
 
 void UnpackNAVSTATUS(uint8_t *buffer)
