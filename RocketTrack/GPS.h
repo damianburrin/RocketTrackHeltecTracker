@@ -8,6 +8,8 @@ extern int fix_rate;
 
 extern uint8_t gps_numSats;
 
+extern uint8_t gpsFix;
+
 extern int32_t gps_lat;
 extern int32_t gps_lon;
 extern int32_t gps_height;

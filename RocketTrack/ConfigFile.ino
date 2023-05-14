@@ -1,5 +1,5 @@
 
-#define DEBUGCONFIG 0
+#define DEBUGCONFIG 1
   
 #include "Accelerometer.h"
 #include "Barometer.h"
@@ -10,6 +10,7 @@
 #include "Logging.h"
 #include "LoRaModule.h"
 #include "Magnetometer.h"
+#include "SDCard.h"
 #include "Webserver.h"
 
 #include <IniFile.h>
