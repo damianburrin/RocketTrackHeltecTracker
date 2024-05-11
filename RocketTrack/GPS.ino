@@ -1,5 +1,6 @@
 
 #include "GPS.h"
+#include "Packetisation.h"
 
 // to be set from the config file
 
@@ -37,7 +38,7 @@ uint32_t ttff=0;
 uint32_t msss=0;
 
 // from NAV-SVINFO
-uint8_t gps_numCh=0;
+uint8_t beaconnumCh=0;
 uint8_t globalFlags=0;
 uint16_t reserved2=0;
 
@@ -50,27 +51,27 @@ int8_t elev[MAX_CHANNELS];
 int16_t azim[MAX_CHANNELS];
 int32_t prRes[MAX_CHANNELS];
 
-uint8_t gps_numSats=0;
+uint8_t beaconnumSats=0;
 
 // from NAV-POSLLH
-int32_t gps_lon=0;
-int32_t gps_lat=0;
-int32_t gps_height=0;
-int32_t gps_hMSL=0;
-int32_t max_gps_hMSL=0;
-uint32_t gps_hAcc=0;
-uint32_t gps_vAcc=0;
+//int32_t gps_lon=0;
+//int32_t gps_lat=0;
+//int32_t gps_height=0;
+//int32_t gps_hMSL=0;
+//int32_t max_beaconhMSL=0;
+//uint32_t gps_hAcc=0;
+//uint32_t gps_vAcc=0;
 
-uint8_t gps_hAccValue=0;
+//uint8_t gps_hAccValue=0;
 
 // from NAV-TIMEUTC
 
-uint16_t gps_year;
-uint8_t gps_month;
-uint8_t gps_day;
-uint8_t gps_hour;
-uint8_t gps_min;
-uint8_t gps_sec;
+uint16_t beaconyear;
+uint8_t beaconmonth;
+uint8_t beaconday;
+uint8_t beaconhour;
+uint8_t beaconmin;
+uint8_t beaconsec;
 
 void CalculateChecksum(uint8_t *buffer,uint16_t bufferptr,uint8_t *CK_A,uint8_t *CK_B)
 {
@@ -442,26 +443,26 @@ void UnpackNAVPOSLLH(uint8_t *buffer)
 #endif
 	
 	iTOW=*((uint32_t *)(buffer+6));
-	gps_lon=*((int32_t *)(buffer+10));
-	gps_lat=*((int32_t *)(buffer+14));
-	gps_height=*((int32_t *)(buffer+18));
-	gps_hMSL=*((int32_t *)(buffer+22));
-	gps_hAcc=*((uint32_t *)(buffer+26));
-	gps_vAcc=*((uint32_t *)(buffer+30));
+	beaconlon=*((int32_t *)(buffer+10));
+	beaconlat=*((int32_t *)(buffer+14));
+	beaconheight=*((int32_t *)(buffer+18));
+	beaconhMSL=*((int32_t *)(buffer+22));
+	uint32_t hacc=*((uint32_t *)(buffer+26));
+	uint32_t vacc=*((uint32_t *)(buffer+30));
 	
-	if((gps_hAcc/500)>255)	gps_hAccValue=255;
-	else					gps_hAccValue=(uint8_t)(gps_hAcc/500);
+	if((hacc/500)>255)	beaconhaccvalue=(float)255;
+	else				beaconhaccvalue=(float)(hacc/500);
 	
 	if(gpsFix==3)
-		if(max_gps_hMSL<gps_hMSL)
-			max_gps_hMSL=gps_hMSL;
+		if(max_beaconhMSL<beaconhMSL)
+			max_beaconhMSL=beaconhMSL;
 	
 #if 0
-	Serial.printf("\t\thAcc = %ld mm\n",gps_hAcc);
+	Serial.printf("\t\thAcc = %ld mm\n",beaconhAcc);
 #endif
 #if (DEBUG>2)
-	Serial.printf("\t\tLat = %.6f, Lon = %.6f, ",gps_lat/1e7,gps_lon/1e7);
-	Serial.printf("height = %.1f\r\n",gps_hMSL/1e3);
+	Serial.printf("\t\tLat = %.6f, Lon = %.6f, ",beaconlat/1e7,beaconlon/1e7);
+	Serial.printf("height = %.1f\r\n",beaconhMSL/1e3);
 #endif
 	
 	baro_trigger=true;
@@ -496,16 +497,16 @@ void UnpackNAVTIMEUTC(uint8_t *buffer)
 	
 	iTOW=*((uint32_t *)(buffer+6));
 	
-	gps_year=*((uint16_t *)(buffer+18));
-	gps_month=*(buffer+20);
-	gps_day=*(buffer+21);
-	gps_hour=*(buffer+22);
-	gps_min=*(buffer+23);
-	gps_sec=*(buffer+24);
+	beaconyear=*((uint16_t *)(buffer+18));
+	beaconmonth=*(buffer+20);
+	beaconday=*(buffer+21);
+	beaconhour=*(buffer+22);
+	beaconmin=*(buffer+23);
+	beaconsec=*(buffer+24);
 	
 #if (DEBUG>2)
 	char buffer[32];
-	sprintf(buffer,"%04d/%02d/%02d %02d:%02d:%02d\r\n",gps_year,gps_month,gps_day,gps_hour,gps_min,gps_sec);
+	sprintf(buffer,"%04d/%02d/%02d %02d:%02d:%02d\r\n",beaconyear,beaconmonth,beaconday,beaconhour,beaconmin,beaconsec);
 	display.print(buffer);	
 #endif
 }
@@ -517,13 +518,13 @@ void UnpackNAVSVINFO(uint8_t *buffer)
 #endif
 	
 	iTOW=*((uint32_t *)(buffer+6));
-	gps_numCh=*(buffer+10);
+	beaconnumCh=*(buffer+10);
 	globalFlags=*(buffer+11);
 	reserved2=*((uint16_t *)(buffer+12));
 	
 	uint8_t cnt;
-	gps_numSats=0;
-	for(cnt=0;cnt<gps_numCh;cnt++)
+	beaconnumSats=0;
+	for(cnt=0;cnt<beaconnumCh;cnt++)
 	{
 		chn[cnt]=*(buffer+14+12*cnt);
 		svid[cnt]=*(buffer+15+12*cnt);
@@ -534,7 +535,7 @@ void UnpackNAVSVINFO(uint8_t *buffer)
 		azim[cnt]=*((int16_t *)(buffer+20+12*cnt));
 		prRes[cnt]=*((int32_t *)(buffer+22+12*cnt));
 		
-		if(cno[cnt]>0)	gps_numSats++;
+		if(cno[cnt]>0)	beaconnumSats++;
 	}
 	
 #if (DEBUG>2)
@@ -557,8 +558,8 @@ int GPSCommandHandler(uint8_t *cmd,uint16_t cmdptr)
 	switch(cmd[1]|0x20)
 	{
 		case 'p':	// position fix
-					Serial.printf("Lat = %.6f, Lon = %.6f, ",gps_lat/1e7,gps_lon/1e7);
-					Serial.printf("height = %.1f\r\n",gps_height/1e3);
+					Serial.printf("Lat = %.6f, Lon = %.6f, ",beaconlat/1e7,beaconlon/1e7);
+					Serial.printf("height = %.1f\r\n",beaconheight/1e3);
 					break;
 		
 		case 'f':	// fix status
@@ -569,7 +570,7 @@ int GPSCommandHandler(uint8_t *cmd,uint16_t cmdptr)
 		
 		case 's':	// satellite info
 					Serial.println("Chan\tPRN\tElev\tAzim\tC/No");
-					for(cnt=0;cnt<gps_numCh;cnt++)
+					for(cnt=0;cnt<beaconnumCh;cnt++)
 					{
 						Serial.print(cnt);	Serial.print("\t"); Serial.print(svid[cnt]);	Serial.print("\t");	Serial.print(elev[cnt]);	Serial.print("\t");	Serial.print(azim[cnt]);	Serial.print("\t");	Serial.println(cno[cnt]);
 					}

@@ -78,9 +78,9 @@ void setup()
 
 	// mandatory peripherals
 
-#ifdef ARDUINO_TBEAM_USE_RADIO_SX1262
+//#ifdef ARDUINO_TBEAM_USE_RADIO_SX1262
 	if(SetupPMIC())				{	Serial.println("PMIC Setup failed, halting ...\r\n");						while(1);				}
-#endif
+//#endif
 	
 	// SD card is optional but if present, modes of operation are configured
 	// from a file rather than just compiled-in defaults.  It will also use
@@ -88,11 +88,11 @@ void setup()
 	
 	if(SetupSDCard())			{	Serial.println("SD Card Setup failed, disabling ...\r\n");					sdcard_enable=0;		}
 
-#ifdef ARDUINO_TBEAM_USE_RADIO_SX1262
+//#ifdef ARDUINO_TBEAM_USE_RADIO_SX1262
 	if(SetupSPIFFS())			{	Serial.println("SPIFFS Setup failed, disabling ...\r\n");					spiffs_enable=0;		}
-#else
-	spiffs_enable=0;
-#endif
+//#else
+//	spiffs_enable=0;
+//#endif
 		
 	ReadConfigFile();
 
@@ -124,7 +124,7 @@ void setup()
 	SetupOnePPS();
 	if(SetupCrypto())			{	Serial.println("Crypto Setup failed, halting ...\r\n");						while(1);				}
 
-#if 0
+#if 1
 	Serial.println(crypto_key_hex);
 	DumpHexPacket(crypto_key,32);
 #endif
@@ -235,14 +235,6 @@ void ProcessCommand(uint8_t *cmd,uint16_t cmdptr)
 	else	{	Serial.println("?");	}
 }
 
-bool IRAM_ATTR TinerHandler0(void *timerNo)
-{
-
-
-
-	return(true);
-}
-
 void i2c_bus_scanner(void)
 {
 	byte error, address;
@@ -287,5 +279,13 @@ void i2c_bus_scanner(void)
 	//	I2C device found at address 0x3C  !		// OLED Display
 	//	I2C device found at address 0x68  !		// MPU6050 Accelerometer/Magnetometer/Gyro
 	//	I2C device found at address 0x76  !		// BME280 pressure sensor  
+}
+
+bool IRAM_ATTR TinerHandler0(void *timerNo)
+{
+
+
+
+	return(true);
 }
 

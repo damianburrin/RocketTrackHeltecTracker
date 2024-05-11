@@ -1,4 +1,5 @@
 
+#include "Packetisation.h"
 #include "Webserver.h"
 #include "WiFiSupport.h"
 
@@ -45,19 +46,19 @@ String processor(const String& var)
 	}
 	else if(var=="LATITUDE")
 	{
-		if(gps_lat>0)	sprintf(buffer,"%2.6f N",gps_lat/1e7);	else	sprintf(buffer,"%2.6f S",-gps_lat/1e7);
+		if(beaconlat>0)	sprintf(buffer,"%2.6f N",beaconlat/1e7);	else	sprintf(buffer,"%2.6f S",-beaconlat/1e7);
 	}
 	else if(var=="LONGITUDE")
 	{
-		if(gps_lon>0)	sprintf(buffer,"%3.6f E",gps_lon/1e7);	else	sprintf(buffer,"%3.6f W",-gps_lon/1e7);
+		if(beaconlon>0)	sprintf(buffer,"%3.6f E",beaconlon/1e7);	else	sprintf(buffer,"%3.6f W",-beaconlon/1e7);
 	}
 	else if(var=="ALTITUDE")
 	{
-		sprintf(buffer,"%.1f",gps_height/1e3);
+		sprintf(buffer,"%.1f",beaconheight/1e3);
 	}
 	else if(var=="NUM_CHANNELS")
 	{
-		sprintf(buffer,"%d",gps_numCh);
+		sprintf(buffer,"%d",beaconnumsats);
 	}
 	else if(var=="GPS_FIX")
 	{
@@ -65,14 +66,14 @@ String processor(const String& var)
 	}
 	else if(var=="HORIZONTAL_ACCURACY")
 	{
-		sprintf(buffer,"%.1f",gps_hAcc);
+		sprintf(buffer,"%.1f",beaconhacc);
 	}
 	else if(var=="SAT_NUMS")
 	{
 		int cnt=0;
-		for(cnt=0;cnt<gps_numCh;cnt++)
+		for(cnt=0;cnt<beaconnumsats;cnt++)
 		{
-			if(cnt!=(gps_numCh-1))
+			if(cnt!=(beaconnumsats-1))
 				sprintf(buffer+strlen(buffer),"%d,",svid[cnt]);
 			else
 				sprintf(buffer+strlen(buffer),"%d",svid[cnt]);
@@ -81,9 +82,9 @@ String processor(const String& var)
 	else if(var=="SAT_ELEVS")
 	{
 		int cnt=0;
-		for(cnt=0;cnt<gps_numCh;cnt++)
+		for(cnt=0;cnt<beaconnumsats;cnt++)
 		{
-			if(cnt!=(gps_numCh-1))
+			if(cnt!=(beaconnumsats-1))
 				sprintf(buffer+strlen(buffer),"%d,",elev[cnt]);
 			else
 				sprintf(buffer+strlen(buffer),"%d",elev[cnt]);
@@ -92,9 +93,9 @@ String processor(const String& var)
 	else if(var=="SAT_AZS")
 	{
 		int cnt=0;
-		for(cnt=0;cnt<gps_numCh;cnt++)
+		for(cnt=0;cnt<beaconnumsats;cnt++)
 		{
-			if(cnt!=(gps_numCh-1))
+			if(cnt!=(beaconnumsats-1))
 				sprintf(buffer+strlen(buffer),"%d,",azim[cnt]);
 			else
 				sprintf(buffer+strlen(buffer),"%d",azim[cnt]);
@@ -103,9 +104,9 @@ String processor(const String& var)
 	else if(var=="SAT_SNRS")
 	{
 		int cnt=0;
-		for(cnt=0;cnt<gps_numCh;cnt++)
+		for(cnt=0;cnt<beaconnumsats;cnt++)
 		{
-			if(cnt!=(gps_numCh-1))
+			if(cnt!=(beaconnumsats-1))
 				sprintf(buffer+strlen(buffer),"%d,",cno[cnt]);
 			else
 				sprintf(buffer+strlen(buffer),"%d",cno[cnt]);

@@ -1,7 +1,7 @@
 
 #pragma once
 
-#ifdef ARDUINO_TBEAM_USE_RADIO_SX1262
+#ifdef ARDUINO_TBEAM_USE_RADIO_SX1276
 
 	#pragma message "Building for TTGO T-Beam"
 

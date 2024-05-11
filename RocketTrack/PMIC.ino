@@ -67,15 +67,12 @@ void PollPMIC(void)
 
 	if(millis()>updateat)
 	{
-		float batteryvoltage=axp.getBattVoltage();
+		beaconvoltage=axp.getBattVoltage();
 		float batterycurrent=axp.getBattChargeCurrent();
-		
-		// scale so 4250mV or fully charge gives a value of 212
-		batvolt=(uint8_t)(batteryvoltage/20);
 		
 		if(livepmicdata)
 		{
-			Serial.printf("Battery voltage = %.1f mV",batteryvoltage);
+			Serial.printf("Battery voltage = %.1f mV",beaconvoltage);
 			if(axp.isChargeing())	{	Serial.printf(", charging at %.1f mA ...\r\n",batterycurrent);	}
 			else					{	Serial.print("\r\n");												}
 		}
@@ -130,6 +127,8 @@ int PMICCommandHandler(uint8_t *cmd,uint16_t cmdptr)
 
 void ControlLED(axp_chgled_mode_t Mode)
 {
+//	Serial.print("ControlLED() entry\r\n");
+	
 	static axp_chgled_mode_t OldMode=AXP20X_LED_OFF;
 
 	if(Mode!=OldMode)
@@ -137,5 +136,7 @@ void ControlLED(axp_chgled_mode_t Mode)
 		axp.setChgLEDMode(Mode);
 		OldMode=Mode;
 	}
+	
+//	Serial.print("ControlLED() exit\r\n");
 }
 

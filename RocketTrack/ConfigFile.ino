@@ -1,5 +1,5 @@
 
-#define DEBUGCONFIG 1
+#define DEBUGCONFIG 0
   
 #include "Accelerometer.h"
 #include "Barometer.h"
@@ -226,7 +226,8 @@ void ReadConfigFile(void)
 {
 	int sdcard_read_error=0;
 	int spiffs_read_error=0;
-	
+
+#if 0
 	if(sdcard_enable)
 	{
 		Serial.println("\tAttempting to read the config from an SD card");
@@ -241,11 +242,13 @@ void ReadConfigFile(void)
 
 		if(spiffs_enable)
 		{
+#endif
 			Serial.println("\tAttempting to read the config from SPI Flash");
 			spiffs_read_error=ReadConfigFileSPIFFS();
 			
 			if(spiffs_read_error)
 				Serial.println("\tReading the config from SPI Flash failed ...");
+#if 0
 		}
 		
 		if(sdcard_read_error&&spiffs_read_error)
@@ -254,6 +257,7 @@ void ReadConfigFile(void)
 			SetDefaultConfigValues();
 		}
 	}
+#endif
 }
 
 void SetDefaultConfigValues(void)

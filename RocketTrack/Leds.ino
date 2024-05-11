@@ -9,8 +9,13 @@ uint8_t LedBitCount=0;
 int SetupLEDs(void)
 {
 	Serial.println("Setting LED off");
+	
+#ifdef ARDUINO_TBEAM_USE_RADIO_SX1276
 	ControlLED(AXP20X_LED_OFF);
-
+#else
+	digitalWrite(LED_PIN,LED_OFF);
+#endif
+	
 	LedPattern=0xffffffff;
 	LedRepeatCount=2;
 	LedBitCount=0;					
@@ -24,12 +29,12 @@ void PollLEDs(void)
 	{
 		if(millis()>=NextLEDs)
 		{
-#ifdef ARDUINO_TBEAM_USE_RADIO_SX1262
+#ifdef ARDUINO_TBEAM_USE_RADIO_SX1276
 			if(LedPattern&0x8000000)	ControlLED(AXP20X_LED_LOW_LEVEL);
 			else						ControlLED(AXP20X_LED_OFF);
 #else
 			if(LedPattern&0x8000000)	digitalWrite(LED_PIN,LED_ON);
-			else						digitalWrite(LED_PIN,LED_OFF;
+			else						digitalWrite(LED_PIN,LED_OFF);
 #endif
 						
 			if(LedRepeatCount>0)
@@ -97,4 +102,3 @@ void led_control(uint32_t led_pattern,uint16_t led_repeat_count)
 	LedRepeatCount=led_repeat_count;
 	LedBitCount=0;
 }
-

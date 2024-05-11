@@ -1,5 +1,6 @@
 
 #include "Display.h"
+#include "Packetisation.h"
 
 #include <Wire.h>
 #include <Adafruit_GFX.h>
@@ -79,35 +80,35 @@ void PollDisplay(void)
 		
 		display.setTextSize(1);
 		
-		sprintf(buffer,"%04d/%02d/%02d\r\n",gps_year,gps_month,gps_day);
+		sprintf(buffer,"%04d/%02d/%02d\r\n",beaconyear,beaconmonth,beaconday);
 		display.print(buffer);
 		
-		sprintf(buffer,"  %02d%02d%02d\r\n",gps_hour,gps_min,gps_sec);
+		sprintf(buffer,"  %02d%02d%02d\r\n",beaconhour,beaconmin,beaconsec);
 		display.print(buffer);
 		
 		switch(DisplayState)
 		{
 			case 0 ... 5:	display.setTextSize(1);
 							display.println();
-							display.printf("Lat:\r\n %.6f\r\n",gps_lat/1e7);
-							display.printf("Lon:\r\n %.6f\r\n",gps_lon/1e7);		
-							display.printf("Altitude:\r\n %.1f m\r\n",gps_hMSL/1e3);							
+							display.printf("Lat:\r\n %.6f\r\n",beaconlat/1e7);
+							display.printf("Lon:\r\n %.6f\r\n",beaconlon/1e7);		
+							display.printf("Altitude:\r\n %.1f m\r\n",beaconhMSL/1e3);							
 							break;
 			
 			case 6 ... 7:	display.setTextSize(1);
 							display.print("\r\n# Sats:\r\n  ");
 							display.setTextSize(2);
-							display.println(gps_numSats);
+							display.println(beaconnumSats);
 							break;
 
 			case 8 ... 11:	display.setTextSize(1);
 							display.print("\r\nGPS Alt\r\nCurr\r\n");
 							display.setTextSize(2);
-							display.printf("%.1f\r\n",gps_hMSL/1e3);
+							display.printf("%.1f\r\n",beaconhMSL/1e3);
 							display.setTextSize(1);
 							display.print("Max\r\n");
 							display.setTextSize(2);
-							display.printf("%.1f\r\n",max_gps_hMSL/1e3);
+							display.printf("%.1f\r\n",max_beaconhMSL/1e3);
 							break;
 							
 			case 12 ... 15:	display.setTextSize(1);

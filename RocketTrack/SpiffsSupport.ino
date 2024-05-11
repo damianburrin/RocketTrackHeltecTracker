@@ -221,6 +221,8 @@ int SetupSPIFFS(void)
 	}
 #endif
 		
+    Serial.print("SPIFFS configured ok ...\r\n");
+    
 	return(0);
 }
 #endif
