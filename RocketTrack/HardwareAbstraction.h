@@ -45,6 +45,30 @@
 	
 #elif BOARD_TTGO_OLED
 
+#elif HELTEC_WIRELESS_TRACKER
+
+  #pragma message "Building for WirelessTracker"
+  #define SCK				9		// GPIO5  -- SX1278's SCK
+	#define MISO			11		// GPIO19 -- SX1278's MISO
+	#define MOSI			10		// GPIO27 -- SX1278's MOSI
+
+	#define LORA_NSS		8
+	#define LORA_RESET		12
+	#define LORA_DIO0		14
+	
+
+
+	#define SDA				21
+	#define SCL				22
+
+  #define USER_BUTTON		0
+
+	#define GPS_BAUD_RATE	9600
+	#define GPS_1PPS		36
+
+	
+  
+
 
 #else
 	#error "Unsupported board selected!"
